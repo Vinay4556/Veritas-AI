@@ -1169,3 +1169,55 @@ def update_notification_db(notif_id: str, updates: Dict) -> Optional[Dict]:
 
 def delete_notification_db(notif_id: str) -> int:
     return delete_record('notifications', 'id = %s', (notif_id,))
+
+
+# ── Token Revocation (Sprint 3) ──────────────────────────────────────────────
+
+def revoke_token_db(raw_token: str, ttl_seconds: int) -> None:
+    """Store SHA-256(raw_token) in revoked_tokens.
+
+    Never stores the raw token itself. Raises on DB error so callers can fail
+    closed — a logout that fails to write its revocation record must not
+    succeed silently in production.
+    """
+    import hashlib
+    from datetime import timedelta
+    token_hash = hashlib.sha256(raw_token.encode('utf-8')).hexdigest()
+    expires_at = datetime.now() + timedelta(seconds=ttl_seconds)
+    query = (
+        "INSERT INTO revoked_tokens (token_hash, revoked_at, expires_at) "
+        "VALUES (%s, %s, %s) ON CONFLICT (token_hash) DO NOTHING"
+    )
+    with get_db_cursor() as cursor:
+        cursor.execute(query, (token_hash, datetime.now(), expires_at))
+
+
+def is_token_revoked_db(raw_token: str) -> bool:
+    """True if the token is in revoked_tokens and has not yet expired.
+
+    Raises RuntimeError on DB error so the caller can fail closed (treat as
+    revoked) — never returns False on a DB failure.
+    """
+    import hashlib
+    token_hash = hashlib.sha256(raw_token.encode('utf-8')).hexdigest()
+    query = (
+        "SELECT 1 FROM revoked_tokens "
+        "WHERE token_hash = %s AND expires_at > now()"
+    )
+    try:
+        row = execute_one(query, (token_hash,))
+        return row is not None
+    except Exception as exc:
+        raise RuntimeError(f'is_token_revoked_db DB error: {exc}') from exc
+
+
+def cleanup_expired_revocations() -> int:
+    """Delete rows where expires_at < now(). Returns the number of rows deleted.
+
+    Safe to call at any time — expired tokens cannot be re-used regardless of
+    whether their revocation record exists.
+    """
+    query = "DELETE FROM revoked_tokens WHERE expires_at < now()"
+    with get_db_cursor() as cursor:
+        cursor.execute(query)
+        return cursor.rowcount

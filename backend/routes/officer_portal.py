@@ -267,9 +267,15 @@ def respond_feedback(fb_id):
 @require_role('OFFICER')
 def officer_bids():
     tender_id = request.args.get('tender_id')
-    bids = load_json('bids.json')
-    if tender_id:
-        bids = [b for b in bids if b.get('tender_id') == tender_id]
+    if USE_DATABASE:
+        filters = {}
+        if tender_id:
+            filters['tender_id'] = tender_id
+        bids = db.list_bids_db(filters or None)
+    else:
+        bids = load_json('bids.json')
+        if tender_id:
+            bids = [b for b in bids if b.get('tender_id') == tender_id]
     # Always return financial fields (price hidden in frontend until opened)
     return jsonify(bids)
 
@@ -283,30 +289,56 @@ def open_financial_bids():
     if not tender_id:
         return jsonify({'error': 'tender_id required'}), 400
 
-    bids = load_json('bids.json')
-    opened = 0
-    for b in bids:
-        if b.get('tender_id') == tender_id and not b.get('financial_bid_opened'):
-            b['financial_bid_opened'] = True
-            b['financial_opened_at'] = datetime.now().isoformat()
-            opened += 1
-    save_json('bids.json', bids)
-
-    audit = load_json('audit.json')
-    audit.append({
-        'id': next_audit_id(audit),
-        'timestamp': datetime.now().isoformat(),
+    audit_entry = {
         'actor': 'Procurement Officer',
         'action': 'Financial Bids Opened',
-        'detail': (
-            f'Officer opened financial bids for tender {tender_id}. '
-            f'{opened} bid(s) unsealed. Two-envelope opening ceremony completed.'
-        ),
         'tender_id': tender_id,
         'bidder_id': None,
         'severity': 'info',
-    })
-    save_json('audit.json', audit)
+        'timestamp': datetime.now(),
+        'created_at': datetime.now(),
+    }
+
+    if USE_DATABASE:
+        all_bids = db.list_bids_db({'tender_id': tender_id})
+        opened = 0
+        for b in all_bids:
+            if not b.get('financial_bid_opened'):
+                db.update_bid_db(b['id'], {
+                    'financial_bid_opened': True,
+                    'financial_opened_at': datetime.now(),
+                })
+                opened += 1
+        audit_entry['detail'] = (
+            f'Officer opened financial bids for tender {tender_id}. '
+            f'{opened} bid(s) unsealed. Two-envelope opening ceremony completed.'
+        )
+        db.append_audit(audit_entry)
+    else:
+        bids = load_json('bids.json')
+        opened = 0
+        for b in bids:
+            if b.get('tender_id') == tender_id and not b.get('financial_bid_opened'):
+                b['financial_bid_opened'] = True
+                b['financial_opened_at'] = datetime.now().isoformat()
+                opened += 1
+        save_json('bids.json', bids)
+
+        audit = load_json('audit.json')
+        audit.append({
+            'id': next_audit_id(audit),
+            'timestamp': datetime.now().isoformat(),
+            'actor': audit_entry['actor'],
+            'action': audit_entry['action'],
+            'detail': (
+                f'Officer opened financial bids for tender {tender_id}. '
+                f'{opened} bid(s) unsealed. Two-envelope opening ceremony completed.'
+            ),
+            'tender_id': tender_id,
+            'bidder_id': None,
+            'severity': 'info',
+        })
+        save_json('audit.json', audit)
 
     return jsonify({'status': 'opened', 'tender_id': tender_id, 'bids_opened': opened})
 
@@ -325,10 +357,16 @@ BID_STAGE_SEQUENCE = [
 def advance_bid_stage(bid_id):
     """Move a bid forward one lifecycle stage."""
     data = request.get_json() or {}
-    bids = load_json('bids.json')
-    bid = next((b for b in bids if b['id'] == bid_id), None)
-    if not bid:
-        return jsonify({'error': 'Bid not found'}), 404
+
+    if USE_DATABASE:
+        bid = db.get_bid_db(bid_id)
+        if not bid:
+            return jsonify({'error': 'Bid not found'}), 404
+    else:
+        bids = load_json('bids.json')
+        bid = next((b for b in bids if b['id'] == bid_id), None)
+        if not bid:
+            return jsonify({'error': 'Bid not found'}), 404
 
     current = bid.get('status', 'SUBMITTED')
     try:
@@ -342,23 +380,19 @@ def advance_bid_stage(bid_id):
     next_stage = BID_STAGE_SEQUENCE[idx + 1]
     notes = data.get('notes', '')
 
-    for b in bids:
-        if b['id'] == bid_id:
-            b['status'] = next_stage
-            b['last_updated'] = datetime.now().isoformat()
-            if next_stage == 'TECHNICAL_EVALUATION':
-                b['technical_status'] = 'IN_PROGRESS'
-            elif next_stage == 'FINANCIAL_EVALUATION':
-                b['technical_status'] = 'COMPLETED'
-                b['financial_status'] = 'IN_PROGRESS'
-            elif next_stage == 'AWARDED':
-                b['financial_status'] = 'COMPLETED'
-    save_json('bids.json', bids)
+    stage_updates = {
+        'status': next_stage,
+        'last_updated': datetime.now().isoformat(),
+    }
+    if next_stage == 'TECHNICAL_EVALUATION':
+        stage_updates['technical_status'] = 'IN_PROGRESS'
+    elif next_stage == 'FINANCIAL_EVALUATION':
+        stage_updates['technical_status'] = 'COMPLETED'
+        stage_updates['financial_status'] = 'IN_PROGRESS'
+    elif next_stage == 'AWARDED':
+        stage_updates['financial_status'] = 'COMPLETED'
 
-    audit = load_json('audit.json')
-    audit.append({
-        'id': next_audit_id(audit),
-        'timestamp': datetime.now().isoformat(),
+    audit_entry = {
         'actor': data.get('officer', 'Procurement Officer'),
         'action': f'Bid Stage Advanced: {current} → {next_stage}',
         'detail': (
@@ -368,8 +402,26 @@ def advance_bid_stage(bid_id):
         'tender_id': bid.get('tender_id'),
         'bidder_id': bid.get('bidder_id'),
         'severity': 'info',
-    })
-    save_json('audit.json', audit)
+        'timestamp': datetime.now(),
+        'created_at': datetime.now(),
+    }
+
+    if USE_DATABASE:
+        db.update_bid_db(bid_id, stage_updates)
+        db.append_audit(audit_entry)
+    else:
+        for b in bids:
+            if b['id'] == bid_id:
+                b.update(stage_updates)
+        save_json('bids.json', bids)
+        audit = load_json('audit.json')
+        audit.append({
+            **audit_entry,
+            'id': next_audit_id(audit),
+            'timestamp': datetime.now().isoformat(),
+            'created_at': datetime.now().isoformat(),
+        })
+        save_json('audit.json', audit)
 
     return jsonify({
         'bid_id': bid_id,
@@ -385,8 +437,11 @@ def advance_bid_stage(bid_id):
 def tender_leaderboard(tender_id):
     """Return compliance leaderboard for all bidders in a tender."""
     from services.scoring_service import get_tender_leaderboard
-    bidders = load_json('bidders.json')
-    tender_bidders = [b for b in bidders if b.get('tender_id') == tender_id]
+    if USE_DATABASE:
+        tender_bidders = db.list_bidders_db({'tender_id': tender_id})
+    else:
+        bidders = load_json('bidders.json')
+        tender_bidders = [b for b in bidders if b.get('tender_id') == tender_id]
     if not tender_bidders:
         return jsonify([])
     bidder_ids = [b['id'] for b in tender_bidders]
@@ -409,8 +464,12 @@ EMD_STATUSES = ['VERIFIED', 'PENDING', 'INVALID', 'EXPIRED', 'MISMATCH', 'EXEMPT
 def verify_emd(bid_id):
     """Officer verifies EMD for a bid. AI pre-flags mismatches; officer confirms."""
     data = request.get_json() or {}
-    bids = load_json('bids.json')
-    bid = next((b for b in bids if b['id'] == bid_id), None)
+
+    if USE_DATABASE:
+        bid = db.get_bid_db(bid_id)
+    else:
+        bids = load_json('bids.json')
+        bid = next((b for b in bids if b['id'] == bid_id), None)
     if not bid:
         return jsonify({'error': 'Bid not found'}), 404
 
@@ -461,25 +520,39 @@ def verify_emd(bid_id):
         'exemption_document': data.get('exemption_document'),
     }
 
-    for b in bids:
-        if b['id'] == bid_id:
-            b['emd_verification'] = emd_record
-            b['emd_status'] = final_status
-            b['last_updated'] = datetime.now().isoformat()
-    save_json('bids.json', bids)
-
-    audit = load_json('audit.json')
-    audit.append({
-        'id': next_audit_id(audit),
-        'timestamp': datetime.now().isoformat(),
+    audit_entry = {
         'actor': data.get('verified_by', 'Procurement Officer'),
         'action': 'EMD_VERIFIED',
         'detail': f'EMD for bid {bid_id} set to {final_status}. AI flags: {len(ai_flags)}.',
         'tender_id': bid.get('tender_id'),
         'bidder_id': bid.get('bidder_id'),
         'severity': 'info' if final_status == 'VERIFIED' else 'warning',
-    })
-    save_json('audit.json', audit)
+        'timestamp': datetime.now(),
+        'created_at': datetime.now(),
+    }
+
+    if USE_DATABASE:
+        db.update_bid_db(bid_id, {
+            'emd_verification': emd_record,
+            'emd_status': final_status,
+            'last_updated': datetime.now(),
+        })
+        db.append_audit(audit_entry)
+    else:
+        for b in bids:
+            if b['id'] == bid_id:
+                b['emd_verification'] = emd_record
+                b['emd_status'] = final_status
+                b['last_updated'] = datetime.now().isoformat()
+        save_json('bids.json', bids)
+        audit = load_json('audit.json')
+        audit.append({
+            **audit_entry,
+            'id': next_audit_id(audit),
+            'timestamp': datetime.now().isoformat(),
+            'created_at': datetime.now().isoformat(),
+        })
+        save_json('audit.json', audit)
 
     return jsonify({'status': 'recorded', 'bid_id': bid_id, 'emd': emd_record})
 
@@ -489,10 +562,17 @@ def verify_emd(bid_id):
 @require_role('OFFICER')
 def price_analysis(bid_id):
     """AI-assisted price reasonableness analysis for a bid."""
-    bids = load_json('bids.json')
-    bid = next((b for b in bids if b['id'] == bid_id), None)
-    if not bid:
-        return jsonify({'error': 'Bid not found'}), 404
+    if USE_DATABASE:
+        bid = db.get_bid_db(bid_id)
+        if not bid:
+            return jsonify({'error': 'Bid not found'}), 404
+        all_bids_raw = db.list_bids_db({'tender_id': bid.get('tender_id')})
+    else:
+        bids = load_json('bids.json')
+        bid = next((b for b in bids if b['id'] == bid_id), None)
+        if not bid:
+            return jsonify({'error': 'Bid not found'}), 404
+        all_bids_raw = bids
 
     from services.tender_service import get_tender_by_id
     tender = get_tender_by_id(bid.get('tender_id', ''))
@@ -507,7 +587,7 @@ def price_analysis(bid_id):
     # that hasn't been priced yet (e.g. no financial submission), and
     # dict.get()'s default only covers a missing key, not an existing
     # key whose value is None. Comparing None > 0 raises a TypeError.
-    all_bids = [b for b in bids
+    all_bids = [b for b in all_bids_raw
                 if b.get('tender_id') == bid.get('tender_id')
                 and (b.get('quoted_price') or 0) > 0
                 and b.get('status') not in ('WITHDRAWN', 'CANCELLED', 'DRAFT')]
@@ -562,17 +642,22 @@ def price_analysis(bid_id):
         flags.append({'type': 'IDENTICAL_PRICE', 'severity': 'MEDIUM',
                       'detail': f'Same quoted price found in {prices.count(quoted)} bids — possible collusion.'})
 
+    price_analysis_record = {
+        **analysis,
+        'flags': flags,
+        'overall_concern': 'HIGH' if any(f['severity'] == 'HIGH' for f in flags)
+                           else 'MEDIUM' if flags else 'LOW',
+        'analyzed_at': datetime.now().isoformat(),
+    }
+
     # Store analysis on bid
-    for b in bids:
-        if b['id'] == bid_id:
-            b['price_analysis'] = {
-                **analysis,
-                'flags': flags,
-                'overall_concern': 'HIGH' if any(f['severity'] == 'HIGH' for f in flags)
-                                   else 'MEDIUM' if flags else 'LOW',
-                'analyzed_at': datetime.now().isoformat(),
-            }
-    save_json('bids.json', bids)
+    if USE_DATABASE:
+        db.update_bid_db(bid_id, {'price_analysis': price_analysis_record})
+    else:
+        for b in all_bids_raw:
+            if b['id'] == bid_id:
+                b['price_analysis'] = price_analysis_record
+        save_json('bids.json', all_bids_raw)
 
     return jsonify({
         'bid_id': bid_id,
@@ -610,39 +695,57 @@ def ai_override(entity_type, entity_id):
         'field': data.get('field'),
     }
 
-    # Persist override to a dedicated file
-    overrides = load_json('ai_overrides.json')
     import uuid as _uuid
     override_record['id'] = f'OVR-{str(_uuid.uuid4())[:6].upper()}'
-    overrides.append(override_record)
-    save_json('ai_overrides.json', overrides)
 
-    # Also update the bid record if applicable
-    if entity_type == 'bid':
-        bids = load_json('bids.json')
-        for b in bids:
-            if b['id'] == entity_id:
-                b.setdefault('ai_overrides', []).append(override_record)
-        save_json('bids.json', bids)
-    elif entity_type == 'compliance':
-        # Update compliance.json override marker
-        compliance = load_json('compliance.json')
-        if isinstance(compliance, dict) and entity_id in compliance:
-            compliance[entity_id].setdefault('overrides', []).append(override_record)
-        save_json('compliance.json', compliance)
-
-    audit = load_json('audit.json')
-    audit.append({
-        'id': next_audit_id(audit),
-        'timestamp': datetime.now().isoformat(),
+    audit_entry = {
         'actor': officer,
         'action': 'AI_OVERRIDE',
         'detail': f'AI result [{ai_result}] overridden to [{officer_result}] for {entity_type}/{entity_id}. Reason: {reason}',
         'tender_id': data.get('tender_id'),
         'bidder_id': data.get('bidder_id'),
         'severity': 'warning',
-    })
-    save_json('audit.json', audit)
+        'timestamp': datetime.now(),
+        'created_at': datetime.now(),
+    }
+
+    if USE_DATABASE:
+        db.create_ai_override_db(override_record)
+        if entity_type == 'bid':
+            existing_bid = db.get_bid_db(entity_id)
+            if existing_bid:
+                existing_overrides = list(existing_bid.get('ai_overrides') or [])
+                existing_overrides.append(override_record)
+                db.update_bid_db(entity_id, {'ai_overrides': existing_overrides})
+        db.append_audit(audit_entry)
+    else:
+        # Persist override to a dedicated file
+        overrides = load_json('ai_overrides.json')
+        overrides.append(override_record)
+        save_json('ai_overrides.json', overrides)
+
+        # Also update the bid record if applicable
+        if entity_type == 'bid':
+            bids = load_json('bids.json')
+            for b in bids:
+                if b['id'] == entity_id:
+                    b.setdefault('ai_overrides', []).append(override_record)
+            save_json('bids.json', bids)
+        elif entity_type == 'compliance':
+            # Update compliance.json override marker
+            compliance = load_json('compliance.json')
+            if isinstance(compliance, dict) and entity_id in compliance:
+                compliance[entity_id].setdefault('overrides', []).append(override_record)
+            save_json('compliance.json', compliance)
+
+        audit = load_json('audit.json')
+        audit.append({
+            **audit_entry,
+            'id': next_audit_id(audit),
+            'timestamp': datetime.now().isoformat(),
+            'created_at': datetime.now().isoformat(),
+        })
+        save_json('audit.json', audit)
 
     return jsonify({'status': 'overridden', 'override': override_record})
 
@@ -651,6 +754,11 @@ def ai_override(entity_type, entity_id):
 @officer_portal_bp.route('/api/tenders/<tender_id>/committee', methods=['GET'])
 @require_role('OFFICER')
 def get_committee(tender_id):
+    if USE_DATABASE:
+        committee = db.get_eval_committee_by_tender_db(tender_id)
+        if not committee:
+            return jsonify({'tender_id': tender_id, 'members': [], 'scores': [], 'status': 'NOT_FORMED'})
+        return jsonify(dict(committee))
     committees = load_json('eval_committees.json')
     committee = next((c for c in committees if c.get('tender_id') == tender_id), None)
     if not committee:
@@ -667,10 +775,34 @@ def form_committee(tender_id):
     if not members:
         return jsonify({'error': 'At least one committee member is required'}), 400
 
+    import uuid as _uuid
+
+    if USE_DATABASE:
+        existing = db.get_eval_committee_by_tender_db(tender_id)
+        if existing:
+            db.update_eval_committee_db(existing['id'], {
+                'members': members,
+                'updated_at': datetime.now(),
+            })
+            committee = db.get_eval_committee_by_tender_db(tender_id)
+        else:
+            committee = {
+                'id': f'COM-{str(_uuid.uuid4())[:6].upper()}',
+                'tender_id': tender_id,
+                'members': members,
+                'formed_by': data.get('formed_by', 'Procurement Officer'),
+                'formed_at': datetime.now(),
+                'updated_at': datetime.now(),
+                'scores': [],
+                'status': 'ACTIVE',
+                'aggregate_method': data.get('aggregate_method', 'AVERAGE'),
+            }
+            db.create_eval_committee_db(committee)
+        return jsonify({'status': 'saved', 'committee': dict(committee)}), 201
+
     committees = load_json('eval_committees.json')
 
     existing = next((c for c in committees if c.get('tender_id') == tender_id), None)
-    import uuid as _uuid
     if existing:
         for c in committees:
             if c['tender_id'] == tender_id:
@@ -708,11 +840,6 @@ def submit_committee_score(tender_id):
     if score is None or not (0 <= float(score) <= 100):
         return jsonify({'error': 'Score must be 0–100'}), 400
 
-    committees = load_json('eval_committees.json')
-    committee = next((c for c in committees if c.get('tender_id') == tender_id), None)
-    if not committee:
-        return jsonify({'error': 'No committee found for this tender'}), 404
-
     score_record = {
         'bid_id': bid_id,
         'evaluator_id': evaluator_id,
@@ -722,6 +849,53 @@ def submit_committee_score(tender_id):
         'submitted_at': datetime.now().isoformat(),
         'immutable': True,
     }
+
+    if USE_DATABASE:
+        committee = db.get_eval_committee_by_tender_db(tender_id)
+        if not committee:
+            return jsonify({'error': 'No committee found for this tender'}), 404
+        # Remove existing score by same evaluator for same bid, then add new
+        existing_scores = list(committee.get('scores') or [])
+        existing_scores = [s for s in existing_scores
+                           if not (s['bid_id'] == bid_id and s['evaluator_id'] == evaluator_id)]
+        existing_scores.append(score_record)
+
+        # Compute aggregate
+        bid_scores = [s['score'] for s in existing_scores if s['bid_id'] == bid_id]
+        method = committee.get('aggregate_method', 'AVERAGE')
+        if bid_scores:
+            if method == 'AVERAGE':
+                aggregate = round(sum(bid_scores) / len(bid_scores), 1)
+            elif method == 'MIN':
+                aggregate = min(bid_scores)
+            elif method == 'MAX':
+                aggregate = max(bid_scores)
+            else:
+                aggregate = round(sum(bid_scores) / len(bid_scores), 1)
+            score_record['aggregate'] = aggregate
+            db.update_bid_db(bid_id, {
+                'technical_score': aggregate,
+                'committee_scores': bid_scores,
+                'committee_evaluators': len(bid_scores),
+            })
+
+        db.update_eval_committee_db(committee['id'], {'scores': existing_scores})
+        db.append_audit({
+            'actor': data.get('evaluator_name', evaluator_id),
+            'action': 'TECHNICAL_SCORE_SUBMITTED',
+            'detail': f'Score {score}/100 submitted for bid {bid_id} by {evaluator_id}.',
+            'tender_id': tender_id,
+            'bidder_id': data.get('bidder_id'),
+            'severity': 'info',
+            'timestamp': datetime.now(),
+            'created_at': datetime.now(),
+        })
+        return jsonify({'status': 'scored', 'score_record': score_record})
+
+    committees = load_json('eval_committees.json')
+    committee = next((c for c in committees if c.get('tender_id') == tender_id), None)
+    if not committee:
+        return jsonify({'error': 'No committee found for this tender'}), 404
 
     for c in committees:
         if c['tender_id'] == tender_id:
@@ -777,13 +951,19 @@ def submit_committee_score(tender_id):
 def verify_preference(bid_id):
     """Verify MSE/Startup preference eligibility for a bid."""
     data = request.get_json() or {}
-    bids = load_json('bids.json')
-    bid = next((b for b in bids if b['id'] == bid_id), None)
-    if not bid:
-        return jsonify({'error': 'Bid not found'}), 404
 
-    bidders = load_json('bidders.json')
-    bidder = next((b for b in bidders if b['id'] == bid.get('bidder_id')), {})
+    if USE_DATABASE:
+        bid = db.get_bid_db(bid_id)
+        if not bid:
+            return jsonify({'error': 'Bid not found'}), 404
+        bidder = db.get_bidder_db(bid.get('bidder_id')) or {}
+    else:
+        bids = load_json('bids.json')
+        bid = next((b for b in bids if b['id'] == bid_id), None)
+        if not bid:
+            return jsonify({'error': 'Bid not found'}), 404
+        bidders = load_json('bidders.json')
+        bidder = next((b for b in bidders if b['id'] == bid.get('bidder_id')), {})
 
     preference = {
         'mse_eligible': data.get('mse_eligible', False),
@@ -802,23 +982,33 @@ def verify_preference(bid_id):
         'officer_final': data.get('officer_final', data.get('preference_applicable', False)),
     }
 
-    for b in bids:
-        if b['id'] == bid_id:
-            b['preference_verification'] = preference
-    save_json('bids.json', bids)
-
-    audit = load_json('audit.json')
-    audit.append({
-        'id': next_audit_id(audit),
-        'timestamp': datetime.now().isoformat(),
+    audit_entry = {
         'actor': data.get('verified_by', 'Procurement Officer'),
         'action': 'PREFERENCE_VERIFIED',
         'detail': f'Preference for bid {bid_id}: MSE={data.get("mse_eligible")}, Startup={data.get("startup_eligible")}',
         'tender_id': bid.get('tender_id'),
         'bidder_id': bid.get('bidder_id'),
         'severity': 'info',
-    })
-    save_json('audit.json', audit)
+        'timestamp': datetime.now(),
+        'created_at': datetime.now(),
+    }
+
+    if USE_DATABASE:
+        db.update_bid_db(bid_id, {'preference_verification': preference})
+        db.append_audit(audit_entry)
+    else:
+        for b in bids:
+            if b['id'] == bid_id:
+                b['preference_verification'] = preference
+        save_json('bids.json', bids)
+        audit = load_json('audit.json')
+        audit.append({
+            **audit_entry,
+            'id': next_audit_id(audit),
+            'timestamp': datetime.now().isoformat(),
+            'created_at': datetime.now().isoformat(),
+        })
+        save_json('audit.json', audit)
 
     return jsonify({'status': 'verified', 'bid_id': bid_id, 'preference': preference})
 
@@ -829,8 +1019,12 @@ def verify_preference(bid_id):
 def verify_local_content(bid_id):
     """Record officer verification of local content / Make in India declaration."""
     data = request.get_json() or {}
-    bids = load_json('bids.json')
-    bid = next((b for b in bids if b['id'] == bid_id), None)
+
+    if USE_DATABASE:
+        bid = db.get_bid_db(bid_id)
+    else:
+        bids = load_json('bids.json')
+        bid = next((b for b in bids if b['id'] == bid_id), None)
     if not bid:
         return jsonify({'error': 'Bid not found'}), 404
 
@@ -848,10 +1042,13 @@ def verify_local_content(bid_id):
         'verified_at': datetime.now().isoformat(),
     }
 
-    for b in bids:
-        if b['id'] == bid_id:
-            b['local_content_verification'] = lc_record
-    save_json('bids.json', bids)
+    if USE_DATABASE:
+        db.update_bid_db(bid_id, {'local_content_verification': lc_record})
+    else:
+        for b in bids:
+            if b['id'] == bid_id:
+                b['local_content_verification'] = lc_record
+        save_json('bids.json', bids)
 
     return jsonify({'status': 'verified', 'local_content': lc_record})
 
@@ -861,8 +1058,12 @@ def verify_local_content(bid_id):
 def verify_oem(bid_id):
     """Record OEM / Authorized Dealer verification result."""
     data = request.get_json() or {}
-    bids = load_json('bids.json')
-    bid = next((b for b in bids if b['id'] == bid_id), None)
+
+    if USE_DATABASE:
+        bid = db.get_bid_db(bid_id)
+    else:
+        bids = load_json('bids.json')
+        bid = next((b for b in bids if b['id'] == bid_id), None)
     if not bid:
         return jsonify({'error': 'Bid not found'}), 404
 
@@ -882,10 +1083,13 @@ def verify_oem(bid_id):
         'verified_at': datetime.now().isoformat(),
     }
 
-    for b in bids:
-        if b['id'] == bid_id:
-            b['oem_verification'] = oem_record
-    save_json('bids.json', bids)
+    if USE_DATABASE:
+        db.update_bid_db(bid_id, {'oem_verification': oem_record})
+    else:
+        for b in bids:
+            if b['id'] == bid_id:
+                b['oem_verification'] = oem_record
+        save_json('bids.json', bids)
 
     return jsonify({'status': 'verified', 'oem': oem_record})
 
@@ -895,18 +1099,22 @@ def verify_oem(bid_id):
 @require_role('OFFICER')
 def vendor_integrity(bidder_id):
     """Get vendor integrity status: blacklist, debarment, conflict of interest."""
-    bidders = load_json('bidders.json')
-    bidder = next((b for b in bidders if b['id'] == bidder_id), None)
-    if not bidder:
-        return jsonify({'error': 'Bidder not found'}), 404
-
-    vendor_profiles = load_json('vendor_profiles.json')
-    profile = next((p for p in vendor_profiles if p.get('bidder_id') == bidder_id), {})
-
-    # Load AI overrides for this bidder
-    overrides = load_json('ai_overrides.json')
-    bidder_overrides = [o for o in overrides if o.get('bidder_id') == bidder_id or
-                        (o.get('entity_type') == 'bid' and o.get('bidder_id') == bidder_id)]
+    if USE_DATABASE:
+        bidder = db.get_bidder_db(bidder_id)
+        if not bidder:
+            return jsonify({'error': 'Bidder not found'}), 404
+        profile = db.get_vendor_profile_by_bidder_db(bidder_id) or {}
+        bidder_overrides = db.list_ai_overrides_db({'bidder_id': bidder_id})
+    else:
+        bidders = load_json('bidders.json')
+        bidder = next((b for b in bidders if b['id'] == bidder_id), None)
+        if not bidder:
+            return jsonify({'error': 'Bidder not found'}), 404
+        vendor_profiles = load_json('vendor_profiles.json')
+        profile = next((p for p in vendor_profiles if p.get('bidder_id') == bidder_id), {})
+        overrides = load_json('ai_overrides.json')
+        bidder_overrides = [o for o in overrides if o.get('bidder_id') == bidder_id or
+                            (o.get('entity_type') == 'bid' and o.get('bidder_id') == bidder_id)]
 
     integrity = {
         'bidder_id': bidder_id,
@@ -932,7 +1140,13 @@ def vendor_integrity(bidder_id):
 @officer_portal_bp.route('/api/tenders/<tender_id>/conflict-declaration', methods=['POST'])
 @require_role('OFFICER')
 def conflict_declaration(tender_id):
-    """Officer or evaluator declares/denies conflict of interest for a tender."""
+    """Officer or evaluator declares/denies conflict of interest for a tender.
+
+    NOTE: This endpoint intentionally uses JSON storage only in both modes.
+    The Sprint 2 migration did not create a conflict_declarations table.
+    Conflict declarations are a low-volume officer action with no critical
+    persistence requirement. A new migration would be needed to add DB support.
+    """
     data = request.get_json() or {}
     session = get_session(request)
     actor_id = (session or {}).get('id', data.get('officer_id', 'USR-001'))
@@ -976,13 +1190,24 @@ def get_notifications():
     user_id = (session or {}).get('id', 'USR-001')
     role = (session or {}).get('role', 'OFFICER')
 
-    notifications = load_json('notifications.json')
-
-    # Filter by recipient
-    user_notifs = [n for n in notifications if
-                   n.get('recipient_id') == user_id or
-                   n.get('recipient_role') == role or
-                   n.get('broadcast', False)]
+    if USE_DATABASE:
+        all_notifs = db.list_notifications_db({'recipient_id': user_id})
+        # Also include role-broadcast notifications
+        role_notifs = db.list_notifications_db({'recipient_role': role})
+        broadcast_notifs = db.list_notifications_db({'broadcast': True})
+        seen = set()
+        user_notifs = []
+        for n in (all_notifs + role_notifs + broadcast_notifs):
+            nid = n.get('id')
+            if nid not in seen:
+                seen.add(nid)
+                user_notifs.append(n)
+    else:
+        notifications = load_json('notifications.json')
+        user_notifs = [n for n in notifications if
+                       n.get('recipient_id') == user_id or
+                       n.get('recipient_role') == role or
+                       n.get('broadcast', False)]
 
     unread = sum(1 for n in user_notifs if not n.get('read', False))
     return jsonify({
@@ -999,15 +1224,21 @@ def mark_notifications_read():
     session = get_session(request)
     user_id = (session or {}).get('id', 'USR-001')
 
-    notifications = load_json('notifications.json')
+    if USE_DATABASE:
+        # Fetch the user's notifications and mark matching ones read
+        all_notifs = db.list_notifications_db({'recipient_id': user_id})
+        for n in all_notifs:
+            if not notification_ids or n.get('id') in notification_ids:
+                db.update_notification_db(n['id'], {'read': True, 'read_at': datetime.now()})
+    else:
+        notifications = load_json('notifications.json')
+        for n in notifications:
+            if not notification_ids or n.get('id') in notification_ids:
+                if n.get('recipient_id') == user_id or n.get('broadcast'):
+                    n['read'] = True
+                    n['read_at'] = datetime.now().isoformat()
+        save_json('notifications.json', notifications)
 
-    for n in notifications:
-        if not notification_ids or n.get('id') in notification_ids:
-            if n.get('recipient_id') == user_id or n.get('broadcast'):
-                n['read'] = True
-                n['read_at'] = datetime.now().isoformat()
-
-    save_json('notifications.json', notifications)
     return jsonify({'status': 'marked_read'})
 
 

@@ -83,13 +83,26 @@ def bidder_dashboard():
     if not bidder_id:
         return jsonify({'error': 'bidder_id is required'}), 400
 
-    bidders = load_json('bidders.json')
-    bidder = next((b for b in bidders if b['id'] == bidder_id), None)
-    if not bidder:
-        return jsonify({'error': 'Bidder not found'}), 404
+    if USE_DATABASE:
+        bidder = db.get_bidder_db(bidder_id)
+        if not bidder:
+            return jsonify({'error': 'Bidder not found'}), 404
+        bids = db.list_bids_db({'bidder_id': bidder_id})
+        clarifications = [
+            c for c in db.list_clarifications_db({'bidder_id': bidder_id})
+            if c.get('status') == 'PENDING_BIDDER'
+        ]
+    else:
+        bidders = load_json('bidders.json')
+        bidder = next((b for b in bidders if b['id'] == bidder_id), None)
+        if not bidder:
+            return jsonify({'error': 'Bidder not found'}), 404
+        bids = [b for b in load_json('bids.json') if b['bidder_id'] == bidder_id]
+        clarifications = [
+            c for c in load_json('clarifications.json')
+            if c['bidder_id'] == bidder_id and c['status'] == 'PENDING_BIDDER'
+        ]
 
-    bids = [b for b in load_json('bids.json') if b['bidder_id'] == bidder_id]
-    clarifications = [c for c in load_json('clarifications.json') if c['bidder_id'] == bidder_id and c['status'] == 'PENDING_BIDDER']
     tenders = get_all_tenders()
     readiness = READINESS_DATA.get(bidder_id, {})
 
@@ -97,7 +110,7 @@ def bidder_dashboard():
         'bidder': bidder,
         'stats': {
             'active_applications': len(bids),
-            'submitted_bids': len([b for b in bids if b['status'] not in ('DRAFT',)]),
+            'submitted_bids': len([b for b in bids if b.get('status') not in ('DRAFT',)]),
             'clarifications_pending': len(clarifications),
             'bid_readiness': readiness.get('score', 0),
             'compliance_score': bidder.get('compliance_score', 0),
@@ -555,6 +568,45 @@ def withdraw_bid(bid_id):
     bidder_id = session.get('organization_id')
     reason = str(data.get('reason') or '').strip()
 
+    if USE_DATABASE:
+        bid = db.get_bid_db(bid_id)
+        if not bid:
+            return jsonify({'error': 'Bid not found'}), 404
+        if bid.get('bidder_id') != bidder_id:
+            return jsonify({'error': 'Unauthorized — this bid does not belong to you'}), 403
+
+        tender = get_tender_by_id(bid.get('tender_id', ''))
+        if tender:
+            deadline_str = tender.get('submission_deadline', '')
+            try:
+                deadline = datetime.strptime(deadline_str[:10], '%Y-%m-%d').date()
+                if datetime.now().date() > deadline:
+                    return jsonify({'error': 'Bid withdrawal is no longer allowed — submission deadline has passed'}), 400
+            except ValueError:
+                pass
+
+        terminal_states = ('AWARDED', 'DISQUALIFIED', 'WITHDRAWN', 'CANCELLED')
+        if bid.get('status') in terminal_states:
+            return jsonify({'error': f'Cannot withdraw bid in status: {bid["status"]}'}), 400
+
+        db.update_bid_db(bid_id, {
+            'status': 'WITHDRAWN',
+            'withdrawn_at': datetime.now(),
+            'withdrawal_reason': reason,
+            'last_updated': datetime.now(),
+        })
+        db.append_audit({
+            'action': 'BID_WITHDRAWN',
+            'actor': bidder_id,
+            'detail': f'Bid {bid_id} withdrawn. Reason: {reason or "Not specified"}',
+            'tender_id': bid.get('tender_id'),
+            'bidder_id': bidder_id,
+            'severity': 'warning',
+            'timestamp': datetime.now(),
+            'created_at': datetime.now(),
+        })
+        return jsonify({'status': 'withdrawn', 'bid_id': bid_id})
+
     bids = load_json('bids.json')
     bid = next((b for b in bids if b['id'] == bid_id), None)
     if not bid:
@@ -611,6 +663,82 @@ def modify_bid(bid_id):
     data = request.get_json(silent=True) or {}
     session = get_session(request)
     bidder_id = session.get('organization_id')
+
+    if USE_DATABASE:
+        bid = db.get_bid_db(bid_id)
+        if not bid:
+            return jsonify({'error': 'Bid not found'}), 404
+        if bid.get('bidder_id') != bidder_id:
+            return jsonify({'error': 'Unauthorized'}), 403
+
+        tender = get_tender_by_id(bid.get('tender_id', ''))
+        if tender:
+            deadline_str = tender.get('submission_deadline', '')
+            try:
+                deadline = datetime.strptime(deadline_str[:10], '%Y-%m-%d').date()
+                if datetime.now().date() > deadline:
+                    return jsonify({'error': 'Bid modification is no longer allowed — deadline passed'}), 400
+            except ValueError:
+                pass
+
+        if bid.get('status') not in ('SUBMITTED', 'DRAFT'):
+            return jsonify({'error': f'Cannot modify bid in status: {bid["status"]}'}), 400
+
+        # Archive current version into JSONB versions array
+        existing_versions = bid.get('versions') or []
+        if isinstance(existing_versions, str):
+            import json as _json
+            existing_versions = _json.loads(existing_versions)
+        version_record = {
+            **{k: v for k, v in bid.items() if k != 'versions'},
+            'archived_at': datetime.now().isoformat(),
+            'version': len(existing_versions) + 1,
+        }
+
+        try:
+            validity_days = int(data.get('validity_period_days', bid.get('validity_period_days', 120)))
+            if 'quoted_price' in data and float(data['quoted_price']) <= 0:
+                return jsonify({'error': 'quoted_price must be greater than zero'}), 400
+        except (TypeError, ValueError):
+            return jsonify({'error': 'quoted_price and validity_period_days must be numbers'}), 400
+        validity_expires = (datetime.now() + timedelta(days=validity_days)).date().isoformat()
+
+        updated_versions = existing_versions + [version_record]
+        updates = {
+            'versions': updated_versions,
+            'version_number': len(updated_versions),
+            'status': 'SUBMITTED',
+            'modified_at': datetime.now(),
+            'last_updated': datetime.now(),
+            'validity_period_days': validity_days,
+            'validity_expires_at': validity_expires,
+        }
+        for field in ['quoted_price', 'price_breakdown', 'delivery_period_days',
+                      'payment_terms', 'emd_reference', 'emd_bank', 'emd_amount',
+                      'financial_remarks']:
+            if field in data:
+                updates[field] = data[field]
+        if 'quoted_price' in data:
+            updates['price_display'] = _format_price(data['quoted_price'])
+
+        db.update_bid_db(bid_id, updates)
+        db.append_audit({
+            'action': 'BID_MODIFIED',
+            'actor': bidder_id,
+            'detail': f'Bid {bid_id} modified. Version: {version_record["version"]}',
+            'tender_id': bid.get('tender_id'),
+            'bidder_id': bidder_id,
+            'severity': 'info',
+            'timestamp': datetime.now(),
+            'created_at': datetime.now(),
+        })
+        updated_bid = db.get_bid_db(bid_id) or {}
+        return jsonify({
+            'status': 'modified',
+            'bid_id': bid_id,
+            'version': updated_bid.get('version_number', 1),
+            'bid': updated_bid,
+        })
 
     bids = load_json('bids.json')
     bid = next((b for b in bids if b['id'] == bid_id), None)
@@ -695,15 +823,28 @@ def bid_versions(bid_id):
     bidder_id = (session or {}).get('organization_id')
     role = (session or {}).get('role', '')
 
-    bids = load_json('bids.json')
-    bid = next((b for b in bids if b['id'] == bid_id), None)
-    if not bid:
-        return jsonify({'error': 'Bid not found'}), 404
+    if USE_DATABASE:
+        bid = db.get_bid_db(bid_id)
+        if not bid:
+            return jsonify({'error': 'Bid not found'}), 404
+        if role != 'OFFICER' and bid.get('bidder_id') != bidder_id:
+            return jsonify({'error': 'Unauthorized'}), 403
+        versions = bid.get('versions') or []
+        if isinstance(versions, str):
+            import json as _json
+            try:
+                versions = _json.loads(versions)
+            except Exception:
+                versions = []
+    else:
+        bids = load_json('bids.json')
+        bid = next((b for b in bids if b['id'] == bid_id), None)
+        if not bid:
+            return jsonify({'error': 'Bid not found'}), 404
+        if role != 'OFFICER' and bid.get('bidder_id') != bidder_id:
+            return jsonify({'error': 'Unauthorized'}), 403
+        versions = bid.get('versions', [])
 
-    if role != 'OFFICER' and bid.get('bidder_id') != bidder_id:
-        return jsonify({'error': 'Unauthorized'}), 403
-
-    versions = bid.get('versions', [])
     return jsonify({
         'bid_id': bid_id,
         'current_version': bid.get('version_number', 1),
