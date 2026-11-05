@@ -1,18 +1,21 @@
 from flask import Blueprint, jsonify
 from services.json_cache import load_cached
+from services.document_service import get_all_documents
 import os
 from config import DATA_DIR
+from routes.auth import require_role
 
 dashboard_bp = Blueprint('dashboard', __name__)
 
 @dashboard_bp.route('/api/dashboard', methods=['GET'])
+@require_role('OFFICER')
 def get_dashboard():
     # ── Load ALL data files once, via cache ───────────────────
     # Before: documents.json was read N times (once per bidder) — N+1 pattern.
     # Now: each file is read at most once per process (cached in memory).
     tenders        = load_cached('tenders.json')
     bidders        = load_cached('bidders.json')
-    all_docs       = load_cached('documents.json')   # one read, reused everywhere below
+    all_docs       = get_all_documents()   # uploaded documents live in PostgreSQL; one read, reused below
     audit          = load_cached('audit.json')
     clarifications = load_cached('clarifications.json')
 

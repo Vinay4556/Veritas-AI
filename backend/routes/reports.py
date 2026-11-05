@@ -6,6 +6,7 @@ from services.compliance_service import calculate_score
 from services.tender_service import get_requirements_for_tender, get_tender_by_id
 from services.document_service import get_documents_for_bidder
 from services.report_service import generate_html_report, save_report
+from routes.auth import require_role
 
 reports_bp = Blueprint('reports', __name__)
 
@@ -126,6 +127,7 @@ def serve_report_file(filename):
 
 
 @reports_bp.route('/api/audit', methods=['GET'])
+@require_role('OFFICER')
 def get_audit_trail():
     audit = load_json('audit.json')
 

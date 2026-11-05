@@ -1,5 +1,5 @@
 """
-Contract & Quality Management Routes — BIDVERIFY 360
+Contract & Quality Management Routes — Veritas AI
 Covers: contract award, milestones, delivery, inspection, corrective actions, vendor profiles.
 """
 import json
@@ -36,6 +36,7 @@ def audit_log(action, detail, tender_id=None, bidder_id=None, actor='System', se
 # ── CONTRACTS ────────────────────────────────────────────────
 
 @contracts_bp.route('/api/contracts', methods=['GET'])
+@require_role('OFFICER', 'BIDDER')
 def list_contracts():
     tender_id = request.args.get('tender_id')
     bidder_id = request.args.get('bidder_id')
@@ -142,6 +143,7 @@ def list_inspections(contract_id):
 
 
 @contracts_bp.route('/api/inspections', methods=['POST'])
+@require_role('OFFICER')
 def create_inspection():
     data = request.get_json() or {}
     inspections = load_json('inspections.json')
@@ -174,15 +176,22 @@ def create_inspection():
 
 
 @contracts_bp.route('/api/inspections/<inspection_id>', methods=['PUT'])
+@require_role('OFFICER')
 def update_inspection(inspection_id):
     data = request.get_json() or {}
     inspections = load_json('inspections.json')
     ins = next((i for i in inspections if i['id'] == inspection_id), None)
     if not ins:
         return jsonify({'error': 'Inspection not found'}), 404
+    ALLOWED_INSPECTION_FIELDS = {
+        'inspection_type', 'inspector', 'inspector_id', 'inspected_at',
+        'status', 'items', 'overall_result', 'corrective_action_required',
+        'corrective_action_id', 'report_notes', 'attachments',
+        'milestone_id',
+    }
     for i in inspections:
         if i['id'] == inspection_id:
-            i.update({k: v for k, v in data.items() if k != 'id'})
+            i.update({k: v for k, v in data.items() if k in ALLOWED_INSPECTION_FIELDS})
     save_json('inspections.json', inspections)
 
     severity = 'warning' if data.get('corrective_action_required') else 'info'
@@ -205,6 +214,7 @@ def list_corrective_actions():
 
 
 @contracts_bp.route('/api/corrective-actions', methods=['POST'])
+@require_role('OFFICER')
 def create_corrective_action():
     data = request.get_json() or {}
     cas = load_json('corrective_actions.json')
@@ -236,6 +246,7 @@ def create_corrective_action():
 
 
 @contracts_bp.route('/api/corrective-actions/<ca_id>/resolve', methods=['POST'])
+@require_role('OFFICER')
 def resolve_corrective_action(ca_id):
     data = request.get_json() or {}
     cas = load_json('corrective_actions.json')

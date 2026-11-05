@@ -7,7 +7,7 @@ Body: { "messages": [{"role": "user"|"model", "parts": "..."}],
 
 Uses Groq's inference API (OpenAI-compatible Chat Completions format).
   Endpoint : https://api.groq.com/openai/v1/chat/completions
-  Auth     : Authorization: Bearer <GROK_API_KEY>  (key starts with gsk_)
+  Auth     : Authorization: Bearer <GROQ_API_KEY>  (key starts with gsk_)
   Model    : openai/gpt-oss-120b  (fast, capable — available on this key)
 
 Conversation history is passed from the frontend on every request.
@@ -20,8 +20,8 @@ from routes.auth import get_session
 
 chat_bp = Blueprint('chat', __name__)
 
-# The env var is named GROK_API_KEY (as set in .env) but it is a Groq key (gsk_...)
-GROK_API_KEY = os.environ.get('GROK_API_KEY', '')
+# Support both GROQ_API_KEY (canonical) and GROK_API_KEY (legacy alias)
+GROQ_API_KEY = os.environ.get('GROQ_API_KEY') or os.environ.get('GROK_API_KEY', '')
 
 # Groq inference — OpenAI-compatible endpoint
 GROQ_URL   = 'https://api.groq.com/openai/v1/chat/completions'
@@ -114,12 +114,16 @@ def chat():
     Stateless Grok chat endpoint.
     The frontend sends the full conversation history on every request.
     """
-    if not GROK_API_KEY:
+    session = get_session(request)
+    if not session:
+        return jsonify({'error': 'Authentication required'}), 401
+
+    if not GROQ_API_KEY:
         return jsonify({
-            'error': 'Grok API key not configured. Set GROK_API_KEY in backend/.env.',
+            'error': 'Groq API key not configured. Set GROQ_API_KEY in backend/.env.',
             'reply': (
                 'The AI Assistant is not configured. '
-                'Please set GROK_API_KEY in the server environment.'
+                'Please set GROQ_API_KEY in the server environment.'
             ),
         }), 503
 
@@ -134,14 +138,12 @@ def chat():
     if len(messages) > 20:
         messages = messages[-20:]
 
-    # Enrich context with the logged-in user's role
-    session = get_session(request)
-    if session:
-        role_ctx = (
-            f"The user is logged in as role={session.get('role')} "
-            f"({session.get('name', '')})."
-        )
-        extra_context = (role_ctx + '\n' + extra_context) if extra_context else role_ctx
+    # Enrich context with the logged-in user's role (session is guaranteed non-None here)
+    role_ctx = (
+        f"The user is logged in as role={session.get('role')} "
+        f"({session.get('name', '')})."
+    )
+    extra_context = (role_ctx + '\n' + extra_context) if extra_context else role_ctx
 
     payload = _build_grok_payload(messages, extra_context)
 
@@ -150,7 +152,7 @@ def chat():
             GROQ_URL,
             json=payload,
             headers={
-                'Authorization': f'Bearer {GROK_API_KEY}',
+                'Authorization': f'Bearer {GROQ_API_KEY}',
                 'Content-Type':  'application/json',
             },
             timeout=30,

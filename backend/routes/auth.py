@@ -1,15 +1,7 @@
 """
 Auth routes - Veritas AI
 Token-based auth with SIGNED, STATELESS tokens.
-
-The previous version kept sessions in a process-local dict.  On Railway (several
-gunicorn workers, restarts on every deploy) a token issued by one worker was
-unknown to the next one, so a successful login was followed by 401 "Not
-authenticated" and the user bounced back to the login page.  A signed token is
-verifiable by any worker without shared state and survives restarts.
-
-Passwords: stored as SHA-256 hashes; the demo users' plaintext passwords are
-accepted for login (kept for the demo build).
+Users stored in PostgreSQL database.
 """
 import hashlib
 import os
@@ -19,17 +11,19 @@ from datetime import datetime
 from flask import Blueprint, current_app, jsonify, request
 from itsdangerous import BadSignature, SignatureExpired, URLSafeTimedSerializer
 
+from services.database import get_user_by_email, get_user_by_id, update_user
+
 auth_bp = Blueprint('auth', __name__)
 
-TOKEN_TTL_SECONDS = int(float(os.environ.get('TOKEN_TTL_HOURS', '12')) * 3600)
+from limiter import limiter  # noqa: E402
 
-from services.json_cache import load_cached as load_json, save_cached as save_json  # noqa: E402
+TOKEN_TTL_SECONDS = int(float(os.environ.get('TOKEN_TTL_HOURS', '12')) * 3600)
 
 
 # ── Signed-token session store ──────────────────────────────────────────────
 
 def _serializer():
-    return URLSafeTimedSerializer(current_app.config['SECRET_KEY'], salt='parakh-auth-v1')
+    return URLSafeTimedSerializer(current_app.config['SECRET_KEY'], salt='veritas-auth-v1')
 
 
 def issue_token(session: dict) -> str:
@@ -56,7 +50,7 @@ class _SessionStore:
         session = self.get(token)
         if token:
             with self._lock:
-                if len(self._revoked) > 5000:      # keep memory bounded
+                if len(self._revoked) > 5000:
                     self._revoked.clear()
                 self._revoked.add(token)
         return session if session is not None else default
@@ -82,14 +76,6 @@ def _token_from_request(req=None) -> str:
     return header.strip()
 
 
-def load_users():
-    return load_json('users.json')
-
-
-def save_users(users):
-    save_json('users.json', users)
-
-
 def _hash_password(password: str) -> str:
     """SHA-256 hash for demo. Use bcrypt/argon2 in production."""
     return hashlib.sha256(password.encode('utf-8')).hexdigest()
@@ -97,7 +83,7 @@ def _hash_password(password: str) -> str:
 
 def _check_password(user: dict, password: str) -> bool:
     """Check password — supports both plaintext demo passwords and hashed ones."""
-    stored = user.get('password') or ''
+    stored = user.get('password_hash') or user.get('password') or ''
     # If stored is a 64-char hex string it's already hashed
     if len(stored) == 64 and all(c in '0123456789abcdef' for c in stored):
         return stored == _hash_password(password)
@@ -106,6 +92,7 @@ def _check_password(user: dict, password: str) -> bool:
 
 
 @auth_bp.route('/api/auth/login', methods=['POST'])
+@limiter.limit('10 per minute')
 def login():
     data = request.get_json(silent=True) or {}
     email = (data.get('email') or '').strip().lower()
@@ -114,8 +101,7 @@ def login():
     if not email or not password:
         return jsonify({'error': 'Email and password are required'}), 400
 
-    users = load_users()
-    user = next((u for u in users if (u.get('email') or '').lower() == email), None)
+    user = get_user_by_email(email)
 
     if not user or not _check_password(user, password):
         return jsonify({'error': 'Invalid credentials'}), 401
@@ -124,16 +110,13 @@ def login():
         return jsonify({'error': 'Account is inactive. Contact administrator.'}), 403
 
     # Update last login
-    for u in users:
-        if u['id'] == user['id']:
-            u['last_login'] = datetime.now().isoformat()
     try:
-        save_users(users)
+        update_user(user['id'], {'last_login': datetime.now()})
     except Exception:
-        pass  # Non-fatal
+        pass  # a failed last_login write must never block a valid login
 
     session = {
-        'id': user['id'],              # alias: several routes read session['id']
+        'id': user['id'],
         'user_id': user['id'],
         'email': user['email'],
         'name': user.get('name'),
@@ -172,10 +155,12 @@ def me():
     session = SESSIONS.get(_token_from_request())
     if not session:
         return jsonify({'error': 'Not authenticated'}), 401
+
     # Re-check the account so a deactivated user is locked out immediately.
-    user = next((u for u in load_users() if u.get('id') == session.get('user_id')), None)
+    user = get_user_by_id(session.get('user_id'))
     if not user or not user.get('active', True):
         return jsonify({'error': 'Account not found or inactive'}), 401
+
     return jsonify(session)
 
 
@@ -193,15 +178,12 @@ def change_password():
     if not new_pw or len(new_pw) < 8:
         return jsonify({'error': 'New password must be at least 8 characters'}), 400
 
-    users = load_users()
-    user = next((u for u in users if u['id'] == session['user_id']), None)
+    user = get_user_by_id(session['user_id'])
     if not user or not _check_password(user, current):
         return jsonify({'error': 'Current password is incorrect'}), 401
 
-    for u in users:
-        if u['id'] == session['user_id']:
-            u['password'] = _hash_password(new_pw)
-    save_users(users)
+    if not update_user(user['id'], {'password_hash': _hash_password(new_pw)}):
+        return jsonify({'error': 'Password could not be changed in this mode (demo users are read-only).'}), 409
     return jsonify({'status': 'password_changed'})
 
 

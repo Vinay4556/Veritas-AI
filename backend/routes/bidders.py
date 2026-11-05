@@ -221,6 +221,7 @@ def list_bidders_for_tender(tender_id):
 
 
 @bidders_bp.route('/api/bidders/<bidder_id>', methods=['GET'])
+@require_role('OFFICER', 'BIDDER')
 def get_bidder(bidder_id):
     try:
         bidders = load_bidders()
@@ -261,9 +262,9 @@ def get_bidder(bidder_id):
 @bidders_bp.route('/api/bidders/<bidder_id>/documents', methods=['GET'])
 def get_bidder_documents(bidder_id):
     docs = get_documents_for_bidder(bidder_id)
-    # Only return documents that were actually uploaded (saved_path present)
-    # Demo seed documents (DOC-001-xx etc.) have no saved_path
-    uploaded = [d for d in docs if d.get('saved_path')]
+    # Only return documents that were actually uploaded (storage_path present)
+    # Demo seed documents (DOC-001-xx etc.) have no storage_path
+    uploaded = [d for d in docs if d.get('storage_path')]
     return jsonify(uploaded)
 
 
@@ -355,6 +356,7 @@ def analyze_bidder(bidder_id):
 
 
 @bidders_bp.route('/api/bidders/<bidder_id>/compliance', methods=['GET'])
+@require_role('OFFICER', 'BIDDER')
 def get_compliance(bidder_id):
     """Get detailed compliance results for a bidder."""
     bidders = load_bidders()
