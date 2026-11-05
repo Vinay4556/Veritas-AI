@@ -1,12 +1,13 @@
 import json, os
 from flask import Blueprint, jsonify, send_file, request, Response
-from config import DATA_DIR, REPORTS_DIR
+from config import DATA_DIR, REPORTS_DIR, USE_DATABASE
 from services.compliance_service import get_compliance_results, get_cross_document_checks
 from services.compliance_service import calculate_score
 from services.tender_service import get_requirements_for_tender, get_tender_by_id
 from services.document_service import get_documents_for_bidder
 from services.report_service import generate_html_report, save_report
 from routes.auth import require_role
+import services.database as db
 
 reports_bp = Blueprint('reports', __name__)
 
@@ -15,6 +16,8 @@ from services.json_cache import load_cached as load_json, save_cached as save_js
 
 
 def load_bidders():
+    if USE_DATABASE:
+        return db.list_bidders_db()
     return load_json('bidders.json')
 
 
@@ -129,12 +132,22 @@ def serve_report_file(filename):
 @reports_bp.route('/api/audit', methods=['GET'])
 @require_role('OFFICER')
 def get_audit_trail():
-    audit = load_json('audit.json')
-
     tender_id = request.args.get('tender_id')
     bidder_id = request.args.get('bidder_id')
     severity = request.args.get('severity')
     limit = request.args.get('limit', type=int)
+
+    if USE_DATABASE:
+        audit = db.list_audits(
+            tender_id=tender_id,
+            bidder_id=bidder_id,
+            limit=limit or 200,
+        )
+        if severity:
+            audit = [a for a in audit if a.get('severity') == severity]
+        return jsonify(audit)
+
+    audit = load_json('audit.json')
 
     if tender_id:
         audit = [a for a in audit if a.get('tender_id') == tender_id or a.get('tender_id') is None]

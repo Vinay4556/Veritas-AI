@@ -1,13 +1,14 @@
 """
-Public / Stakeholder Portal Routes - PARAKH AI
+Public / Stakeholder Portal Routes - Veritas AI
 Public-facing APIs — NO confidential bidder information.
 """
 import json
 import os
 from datetime import datetime
 from flask import Blueprint, jsonify, request
-from config import DATA_DIR
+from config import DATA_DIR, USE_DATABASE
 from services.tender_service import get_all_tenders, get_tender_by_id
+import services.database as db
 
 public_portal_bp = Blueprint('public_portal', __name__)
 
@@ -325,8 +326,12 @@ def submit_feedback(tender_id):
         'ai_priority': ai_priority,
         'ai_tender_id': tender_id,
     }
-    feedback.append(new_fb)
-    save_json('feedback.json', feedback)
+    if USE_DATABASE:
+        db.create_feedback_db(new_fb)
+    else:
+        feedback = load_json('feedback.json')
+        feedback.append(new_fb)
+        save_json('feedback.json', feedback)
 
     return jsonify({'status': 'submitted', 'feedback_id': fb_id, 'ai_priority': ai_priority}), 201
 
@@ -336,11 +341,19 @@ def submit_feedback(tender_id):
 def public_feedback_list():
     tender_id = request.args.get('tender_id')
     submitter = request.args.get('submitted_by')
-    feedback = load_json('feedback.json')
-    if tender_id:
-        feedback = [f for f in feedback if f.get('tender_id') == tender_id]
-    if submitter:
-        feedback = [f for f in feedback if f.get('submitted_by') == submitter]
+    if USE_DATABASE:
+        filters = {}
+        if tender_id:
+            filters['tender_id'] = tender_id
+        if submitter:
+            filters['submitted_by'] = submitter
+        feedback = db.list_feedback_db(filters or None)
+    else:
+        feedback = load_json('feedback.json')
+        if tender_id:
+            feedback = [f for f in feedback if f.get('tender_id') == tender_id]
+        if submitter:
+            feedback = [f for f in feedback if f.get('submitted_by') == submitter]
     # Return only public-safe fields
     safe = []
     for f in feedback:

@@ -7,9 +7,10 @@ import os
 import uuid
 from datetime import datetime
 from flask import Blueprint, jsonify, request
-from config import DATA_DIR
+from config import DATA_DIR, USE_DATABASE
 from services.audit_utils import next_audit_id
 from routes.auth import require_role
+import services.database as db
 
 contracts_bp = Blueprint('contracts', __name__)
 
@@ -19,6 +20,23 @@ from services.json_cache import load_cached as load_json, save_cached as save_js
 
 
 def audit_log(action, detail, tender_id=None, bidder_id=None, actor='System', severity='info'):
+    if USE_DATABASE:
+        try:
+            db.append_audit({
+                'action': action,
+                'actor': actor,
+                'detail': detail,
+                'tender_id': tender_id,
+                'bidder_id': bidder_id,
+                'severity': severity,
+                'timestamp': datetime.now(),
+                'created_at': datetime.now(),
+            })
+            return
+        except Exception as exc:
+            import logging
+            logging.getLogger(__name__).error('DB audit write failed: %s', exc)
+            raise
     audit = load_json('audit.json')
     audit.append({
         'id': next_audit_id(audit),
@@ -40,6 +58,13 @@ def audit_log(action, detail, tender_id=None, bidder_id=None, actor='System', se
 def list_contracts():
     tender_id = request.args.get('tender_id')
     bidder_id = request.args.get('bidder_id')
+    if USE_DATABASE:
+        filters = {}
+        if tender_id:
+            filters['tender_id'] = tender_id
+        if bidder_id:
+            filters['bidder_id'] = bidder_id
+        return jsonify(db.list_contracts_db(filters or None))
     contracts = load_json('contracts.json')
     if tender_id:
         contracts = [c for c in contracts if c.get('tender_id') == tender_id]
@@ -50,11 +75,17 @@ def list_contracts():
 
 @contracts_bp.route('/api/contracts/<contract_id>', methods=['GET'])
 def get_contract(contract_id):
+    if USE_DATABASE:
+        contract = db.get_contract_db(contract_id)
+        if not contract:
+            return jsonify({'error': 'Contract not found'}), 404
+        inspections = db.list_inspections_db({'contract_id': contract_id})
+        contract['inspections'] = inspections
+        return jsonify(contract)
     contracts = load_json('contracts.json')
     contract = next((c for c in contracts if c['id'] == contract_id), None)
     if not contract:
         return jsonify({'error': 'Contract not found'}), 404
-    # Attach inspections
     inspections = [i for i in load_json('inspections.json') if i.get('contract_id') == contract_id]
     contract['inspections'] = inspections
     return jsonify(contract)
@@ -69,7 +100,13 @@ def create_contract():
         if not data.get(field):
             return jsonify({'error': f'Missing required field: {field}'}), 400
 
-    contracts = load_json('contracts.json')
+    if USE_DATABASE:
+        existing = db.list_contracts_db()
+        con_num = len(existing) + 1
+    else:
+        existing = load_json('contracts.json')
+        con_num = len(existing) + 1
+
     contract = {
         'id': f'CON-{datetime.now().year}-{str(uuid.uuid4())[:6].upper()}',
         'tender_id': data['tender_id'],
@@ -81,7 +118,7 @@ def create_contract():
         'awarded_at': datetime.now().isoformat(),
         'contract_value': data['contract_value'],
         'contract_value_display': data.get('contract_value_display', f"₹{data['contract_value']:,}"),
-        'contract_reference': data.get('contract_reference', f"CON/{datetime.now().year}/{len(contracts)+1:04d}"),
+        'contract_reference': data.get('contract_reference', f"CON/{datetime.now().year}/{con_num:04d}"),
         'status': 'AWARDED',
         'delivery_address': data.get('delivery_address', ''),
         'delivery_deadline': data.get('delivery_deadline'),
@@ -92,15 +129,19 @@ def create_contract():
         'penalty_details': None,
         'notes': data.get('notes', ''),
     }
-    contracts.append(contract)
-    save_json('contracts.json', contracts)
 
-    # Update bid status
-    bids = load_json('bids.json')
-    for b in bids:
-        if b['id'] == data['bid_id']:
-            b['status'] = 'AWARDED'
-    save_json('bids.json', bids)
+    if USE_DATABASE:
+        db.create_contract_db(contract)
+        db.update_bid_db(data['bid_id'], {'status': 'AWARDED', 'last_updated': datetime.now()})
+    else:
+        contracts = load_json('contracts.json')
+        contracts.append(contract)
+        save_json('contracts.json', contracts)
+        bids = load_json('bids.json')
+        for b in bids:
+            if b['id'] == data['bid_id']:
+                b['status'] = 'AWARDED'
+        save_json('bids.json', bids)
 
     audit_log('Contract Awarded', f"Contract {contract['id']} awarded to {data['bidder_name']}",
               tender_id=data['tender_id'], bidder_id=data['bidder_id'],
@@ -113,19 +154,31 @@ def create_contract():
 def update_milestone(contract_id):
     data = request.get_json() or {}
     milestone_id = data.get('milestone_id')
-    contracts = load_json('contracts.json')
-    contract = next((c for c in contracts if c['id'] == contract_id), None)
-    if not contract:
-        return jsonify({'error': 'Contract not found'}), 404
 
-    for c in contracts:
-        if c['id'] == contract_id:
-            for ms in c.get('milestones', []):
-                if ms['id'] == milestone_id:
-                    ms.update({k: v for k, v in data.items() if k not in ('contract_id', 'milestone_id')})
-                    if data.get('status') == 'COMPLETED' and not ms.get('completed_date'):
-                        ms['completed_date'] = datetime.now().strftime('%Y-%m-%d')
-    save_json('contracts.json', contracts)
+    if USE_DATABASE:
+        contract = db.get_contract_db(contract_id)
+        if not contract:
+            return jsonify({'error': 'Contract not found'}), 404
+        milestones = list(contract.get('milestones') or [])
+        for ms in milestones:
+            if ms.get('id') == milestone_id:
+                ms.update({k: v for k, v in data.items() if k not in ('contract_id', 'milestone_id')})
+                if data.get('status') == 'COMPLETED' and not ms.get('completed_date'):
+                    ms['completed_date'] = datetime.now().strftime('%Y-%m-%d')
+        db.update_contract_db(contract_id, {'milestones': milestones})
+    else:
+        contracts = load_json('contracts.json')
+        contract = next((c for c in contracts if c['id'] == contract_id), None)
+        if not contract:
+            return jsonify({'error': 'Contract not found'}), 404
+        for c in contracts:
+            if c['id'] == contract_id:
+                for ms in c.get('milestones', []):
+                    if ms['id'] == milestone_id:
+                        ms.update({k: v for k, v in data.items() if k not in ('contract_id', 'milestone_id')})
+                        if data.get('status') == 'COMPLETED' and not ms.get('completed_date'):
+                            ms['completed_date'] = datetime.now().strftime('%Y-%m-%d')
+        save_json('contracts.json', contracts)
 
     audit_log('Milestone Updated', f"Milestone {milestone_id} updated on contract {contract_id}",
               tender_id=contract.get('tender_id'), bidder_id=contract.get('bidder_id'),
@@ -138,6 +191,8 @@ def update_milestone(contract_id):
 
 @contracts_bp.route('/api/contracts/<contract_id>/inspections', methods=['GET'])
 def list_inspections(contract_id):
+    if USE_DATABASE:
+        return jsonify(db.list_inspections_db({'contract_id': contract_id}))
     inspections = [i for i in load_json('inspections.json') if i.get('contract_id') == contract_id]
     return jsonify(inspections)
 
@@ -146,7 +201,6 @@ def list_inspections(contract_id):
 @require_role('OFFICER')
 def create_inspection():
     data = request.get_json() or {}
-    inspections = load_json('inspections.json')
     inspection = {
         'id': f'INS-{str(uuid.uuid4())[:6].upper()}',
         'contract_id': data.get('contract_id'),
@@ -165,8 +219,13 @@ def create_inspection():
         'report_notes': data.get('report_notes', ''),
         'attachments': data.get('attachments', []),
     }
-    inspections.append(inspection)
-    save_json('inspections.json', inspections)
+
+    if USE_DATABASE:
+        db.create_inspection_db(inspection)
+    else:
+        inspections = load_json('inspections.json')
+        inspections.append(inspection)
+        save_json('inspections.json', inspections)
 
     audit_log('Inspection Created', f"Quality inspection {inspection['id']} created for contract {data.get('contract_id')}",
               tender_id=data.get('tender_id'), bidder_id=data.get('bidder_id'),
@@ -179,20 +238,29 @@ def create_inspection():
 @require_role('OFFICER')
 def update_inspection(inspection_id):
     data = request.get_json() or {}
-    inspections = load_json('inspections.json')
-    ins = next((i for i in inspections if i['id'] == inspection_id), None)
-    if not ins:
-        return jsonify({'error': 'Inspection not found'}), 404
+
     ALLOWED_INSPECTION_FIELDS = {
         'inspection_type', 'inspector', 'inspector_id', 'inspected_at',
         'status', 'items', 'overall_result', 'corrective_action_required',
         'corrective_action_id', 'report_notes', 'attachments',
         'milestone_id',
     }
-    for i in inspections:
-        if i['id'] == inspection_id:
-            i.update({k: v for k, v in data.items() if k in ALLOWED_INSPECTION_FIELDS})
-    save_json('inspections.json', inspections)
+
+    if USE_DATABASE:
+        ins = db.get_inspection_db(inspection_id)
+        if not ins:
+            return jsonify({'error': 'Inspection not found'}), 404
+        allowed_updates = {k: v for k, v in data.items() if k in ALLOWED_INSPECTION_FIELDS}
+        db.update_inspection_db(inspection_id, allowed_updates)
+    else:
+        inspections = load_json('inspections.json')
+        ins = next((i for i in inspections if i['id'] == inspection_id), None)
+        if not ins:
+            return jsonify({'error': 'Inspection not found'}), 404
+        for i in inspections:
+            if i['id'] == inspection_id:
+                i.update({k: v for k, v in data.items() if k in ALLOWED_INSPECTION_FIELDS})
+        save_json('inspections.json', inspections)
 
     severity = 'warning' if data.get('corrective_action_required') else 'info'
     audit_log('Inspection Updated', f"Inspection {inspection_id} result: {data.get('overall_result', 'updated')}",
@@ -207,6 +275,9 @@ def update_inspection(inspection_id):
 @contracts_bp.route('/api/corrective-actions', methods=['GET'])
 def list_corrective_actions():
     contract_id = request.args.get('contract_id')
+    if USE_DATABASE:
+        filters = {'contract_id': contract_id} if contract_id else None
+        return jsonify(db.list_corrective_actions_db(filters))
     cas = load_json('corrective_actions.json')
     if contract_id:
         cas = [ca for ca in cas if ca.get('contract_id') == contract_id]
@@ -217,7 +288,6 @@ def list_corrective_actions():
 @require_role('OFFICER')
 def create_corrective_action():
     data = request.get_json() or {}
-    cas = load_json('corrective_actions.json')
     ca = {
         'id': f'CA-{str(uuid.uuid4())[:6].upper()}',
         'inspection_id': data.get('inspection_id'),
@@ -235,8 +305,13 @@ def create_corrective_action():
         're_inspection_id': None,
         'impact_on_payment': data.get('impact_on_payment', 'Pending assessment'),
     }
-    cas.append(ca)
-    save_json('corrective_actions.json', cas)
+
+    if USE_DATABASE:
+        db.create_corrective_action_db(ca)
+    else:
+        cas = load_json('corrective_actions.json')
+        cas.append(ca)
+        save_json('corrective_actions.json', cas)
 
     audit_log('Corrective Action Issued', f"CA {ca['id']}: {data.get('description', '')}",
               bidder_id=data.get('bidder_id'), actor=data.get('issued_by', 'Quality Officer'),
@@ -249,17 +324,29 @@ def create_corrective_action():
 @require_role('OFFICER')
 def resolve_corrective_action(ca_id):
     data = request.get_json() or {}
-    cas = load_json('corrective_actions.json')
-    ca = next((c for c in cas if c['id'] == ca_id), None)
-    if not ca:
-        return jsonify({'error': 'Corrective action not found'}), 404
-    for c in cas:
-        if c['id'] == ca_id:
-            c['status'] = 'RESOLVED'
-            c['resolved_at'] = datetime.now().isoformat()
-            c['vendor_response'] = data.get('vendor_response', '')
-            c['re_inspection_id'] = data.get('re_inspection_id')
-    save_json('corrective_actions.json', cas)
+
+    if USE_DATABASE:
+        ca = db.get_corrective_action_db(ca_id)
+        if not ca:
+            return jsonify({'error': 'Corrective action not found'}), 404
+        db.update_corrective_action_db(ca_id, {
+            'status': 'RESOLVED',
+            'resolved_at': datetime.now(),
+            'vendor_response': data.get('vendor_response', ''),
+            're_inspection_id': data.get('re_inspection_id'),
+        })
+    else:
+        cas = load_json('corrective_actions.json')
+        ca = next((c for c in cas if c['id'] == ca_id), None)
+        if not ca:
+            return jsonify({'error': 'Corrective action not found'}), 404
+        for c in cas:
+            if c['id'] == ca_id:
+                c['status'] = 'RESOLVED'
+                c['resolved_at'] = datetime.now().isoformat()
+                c['vendor_response'] = data.get('vendor_response', '')
+                c['re_inspection_id'] = data.get('re_inspection_id')
+        save_json('corrective_actions.json', cas)
 
     audit_log('Corrective Action Resolved', f"CA {ca_id} resolved",
               bidder_id=ca.get('bidder_id'), actor=data.get('resolved_by', 'Vendor'),
@@ -272,12 +359,33 @@ def resolve_corrective_action(ca_id):
 
 @contracts_bp.route('/api/vendor-profiles', methods=['GET'])
 def list_vendor_profiles():
+    if USE_DATABASE:
+        return jsonify(db.list_vendor_profiles_db())
     profiles = load_json('vendor_profiles.json')
     return jsonify(profiles)
 
 
 @contracts_bp.route('/api/vendor-profiles/<bidder_id>', methods=['GET'])
 def get_vendor_profile(bidder_id):
+    if USE_DATABASE:
+        profile = db.get_vendor_profile_by_bidder_db(bidder_id)
+        if not profile:
+            bidder = db.get_bidder_db(bidder_id)
+            if not bidder:
+                return jsonify({'error': 'Vendor not found'}), 404
+            return jsonify({
+                'bidder_id': bidder_id,
+                'bidder_name': bidder.get('name'),
+                'gstin': bidder.get('gstin'),
+                'total_tenders_participated': 0,
+                'total_contracts_awarded': 0,
+                'avg_compliance_score': bidder.get('compliance_score', 0),
+                'risk_signal': bidder.get('risk_level', 'UNKNOWN'),
+                'performance_trend': 'INSUFFICIENT_DATA',
+                'blacklisted': False,
+                'debarment_status': 'NONE',
+            })
+        return jsonify(profile)
     profiles = load_json('vendor_profiles.json')
     profile = next((p for p in profiles if p['bidder_id'] == bidder_id), None)
     if not profile:

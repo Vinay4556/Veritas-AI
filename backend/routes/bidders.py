@@ -5,13 +5,14 @@ import time
 import uuid
 from datetime import datetime
 from flask import Blueprint, jsonify, request
-from config import DATA_DIR
+from config import DATA_DIR, USE_DATABASE
 from services.audit_utils import next_audit_id
 from services.document_service import get_documents_for_bidder
 from services.compliance_service import get_compliance_results, calculate_score, get_cross_document_checks
 from services.tender_service import get_requirements_for_tender, get_tender_by_id
 from routes.auth import require_role, get_session
 from services.json_cache import load_cached, save_cached
+import services.database as db
 
 bidders_bp = Blueprint('bidders', __name__)
 
@@ -24,12 +25,15 @@ _EMAIL_RE = re.compile(r'^[^@\s]+@[^@\s]+\.[^@\s]+$')
 
 def load_bidders():
     """Database read — returns all bidders as list of dicts."""
+    if USE_DATABASE:
+        return db.list_bidders_db()
     return load_cached('bidders.json')
 
 
 def save_bidders(bidders):
-    """Write bidders back to database."""
-    save_cached('bidders.json', bidders)
+    """Write bidders back to database — JSON path only; DB path uses targeted updates."""
+    if not USE_DATABASE:
+        save_cached('bidders.json', bidders)
 
 
 def _null_if_placeholder(value, placeholder_patterns=None):
@@ -272,77 +276,113 @@ def get_bidder_documents(bidder_id):
 @require_role('OFFICER')
 def analyze_bidder(bidder_id):
     """Run compliance analysis for a bidder and persist results."""
-    from services.json_cache import load_cached, save_cached
-
-    bidders = load_bidders()
-    bidder = next((b for b in bidders if b['id'] == bidder_id), None)
+    if USE_DATABASE:
+        bidder = db.get_bidder_db(bidder_id)
+    else:
+        bidders = load_bidders()
+        bidder = next((b for b in bidders if b['id'] == bidder_id), None)
     if not bidder:
         return jsonify({'error': 'Bidder not found'}), 404
 
     tender_id = bidder.get('tender_id')
-    requirements = get_requirements_for_tender(tender_id)
+    if USE_DATABASE:
+        requirements = db.list_requirements_db(tender_id)
+    else:
+        requirements = get_requirements_for_tender(tender_id)
     documents = get_documents_for_bidder(bidder_id)
 
-    # Run compliance engine
     compliance_results = get_compliance_results(bidder_id, requirements, documents, bidder=bidder)
     score_data = calculate_score(compliance_results, requirements)
 
-    # Persist compliance results — use cache for read, save_cached for write
-    try:
-        all_compliance = load_cached('compliance.json')
-        if not isinstance(all_compliance, dict):
-            all_compliance = {}
-    except Exception:
-        all_compliance = {}
-
-    serialized = {}
-    for req_id, result in compliance_results.items():
-        serialized[req_id] = {
-            'status':          result.get('status'),
-            'confidence':      result.get('confidence'),
-            'source_doc':      result.get('source_doc'),
-            'extracted_value': result.get('extracted_value'),
-            'required_value':  result.get('required_value'),
-            'found_value':     result.get('found_value'),
-            'reason':          result.get('reason', ''),
-            'concern':         result.get('concern', ''),
-        }
-    all_compliance[bidder_id] = {
-        'results':     serialized,
-        'score':       score_data,
-        'analyzed_at': datetime.now().isoformat(),
-        'tender_id':   tender_id,
-    }
-    save_cached('compliance.json', all_compliance)
-
-    # Update bidder record
-    for b in bidders:
-        if b['id'] == bidder_id:
-            b['compliance_score'] = score_data['overall_score']
-            b['risk_level']       = score_data['risk_level']
-            b['status']           = 'analyzed'
-            b['analyzed_at']      = datetime.now().isoformat()
-    save_bidders(bidders)
-
-    # Audit log — cached read + cached write
-    try:
-        audit = load_cached('audit.json')
-        audit.append({
-            'id':        next_audit_id(audit),
-            'timestamp': datetime.now().isoformat(),
-            'actor':     'Veritas AI Engine',
-            'action':    'Compliance Analysis Completed',
-            'detail':    (f"Bidder {bidder.get('name', bidder_id)} scored "
-                          f"{score_data['overall_score']}% with {score_data['risk_level']} risk."),
+    if USE_DATABASE:
+        # Persist compliance results to DB — delete old, insert new (idempotent)
+        db.delete_compliance_results_db(bidder_id)
+        for req_id, result in compliance_results.items():
+            db.create_compliance_result_db({
+                'bidder_id': bidder_id,
+                'requirement_id': req_id,
+                'tender_id': tender_id,
+                'status': result.get('status', 'MISSING'),
+                'confidence': result.get('confidence'),
+                'source_doc_id': result.get('source_doc'),
+                'extracted_value': result.get('extracted_value'),
+                'required_value': result.get('required_value'),
+                'found_value': result.get('found_value'),
+                'reason': result.get('reason', ''),
+                'concern': result.get('concern', ''),
+                'overall_score': score_data.get('overall_score'),
+                'risk_level': score_data.get('risk_level'),
+            })
+        db.update_bidder_db(bidder_id, {
+            'compliance_score': score_data['overall_score'],
+            'risk_level': score_data['risk_level'],
+            'status': 'analyzed',
+            'analyzed_at': datetime.now(),
+        })
+        db.append_audit({
+            'action': 'Compliance Analysis Completed',
+            'actor': 'Veritas AI Engine',
+            'detail': (f"Bidder {bidder.get('name', bidder_id)} scored "
+                       f"{score_data['overall_score']}% with {score_data['risk_level']} risk."),
             'tender_id': tender_id,
             'bidder_id': bidder_id,
-            'severity':  ('info' if score_data['risk_level'] == 'LOW'
-                          else 'warning' if score_data['risk_level'] == 'MEDIUM'
-                          else 'error'),
+            'severity': ('info' if score_data['risk_level'] == 'LOW'
+                         else 'warning' if score_data['risk_level'] == 'MEDIUM' else 'error'),
+            'timestamp': datetime.now(),
+            'created_at': datetime.now(),
         })
-        save_cached('audit.json', audit)
-    except Exception:
-        pass
+    else:
+        # JSON path
+        try:
+            all_compliance = load_cached('compliance.json')
+            if not isinstance(all_compliance, dict):
+                all_compliance = {}
+        except Exception:
+            all_compliance = {}
+        serialized = {}
+        for req_id, result in compliance_results.items():
+            serialized[req_id] = {
+                'status':          result.get('status'),
+                'confidence':      result.get('confidence'),
+                'source_doc':      result.get('source_doc'),
+                'extracted_value': result.get('extracted_value'),
+                'required_value':  result.get('required_value'),
+                'found_value':     result.get('found_value'),
+                'reason':          result.get('reason', ''),
+                'concern':         result.get('concern', ''),
+            }
+        all_compliance[bidder_id] = {
+            'results':     serialized,
+            'score':       score_data,
+            'analyzed_at': datetime.now().isoformat(),
+            'tender_id':   tender_id,
+        }
+        save_cached('compliance.json', all_compliance)
+        bidders_list = load_cached('bidders.json')
+        for b in bidders_list:
+            if b['id'] == bidder_id:
+                b['compliance_score'] = score_data['overall_score']
+                b['risk_level']       = score_data['risk_level']
+                b['status']           = 'analyzed'
+                b['analyzed_at']      = datetime.now().isoformat()
+        save_cached('bidders.json', bidders_list)
+        try:
+            audit = load_cached('audit.json')
+            audit.append({
+                'id':        next_audit_id(audit),
+                'timestamp': datetime.now().isoformat(),
+                'actor':     'Veritas AI Engine',
+                'action':    'Compliance Analysis Completed',
+                'detail':    (f"Bidder {bidder.get('name', bidder_id)} scored "
+                              f"{score_data['overall_score']}% with {score_data['risk_level']} risk."),
+                'tender_id': tender_id,
+                'bidder_id': bidder_id,
+                'severity':  ('info' if score_data['risk_level'] == 'LOW'
+                              else 'warning' if score_data['risk_level'] == 'MEDIUM' else 'error'),
+            })
+            save_cached('audit.json', audit)
+        except Exception:
+            pass
 
     return jsonify({
         'bidder_id': bidder_id,
@@ -486,27 +526,33 @@ def create_bidder():
 
     if not _EMAIL_RE.match(data['email'].strip()):
         return jsonify({'error': 'Invalid email address'}), 400
-    if not get_tender_by_id(data['tender_id'].strip()):
+
+    if USE_DATABASE:
+        tender = db.get_tender_db(data['tender_id'].strip())
+    else:
+        tender = get_tender_by_id(data['tender_id'].strip())
+    if not tender:
         return jsonify({'error': f"Tender {data['tender_id']} not found"}), 404
 
-    # Validate PAN format: 5 uppercase letters, 4 digits, 1 uppercase letter
     pan = data['pan'].strip().upper()
     if not _PAN_RE.match(pan):
         return jsonify({
             'error': 'Invalid PAN format. PAN must be 10 characters: 5 letters, 4 digits, 1 letter (e.g. ABCDE1234F).'
         }), 400
 
-    # Validate GSTIN format
     gstin = data['gstin'].strip().upper()
     if not _GSTIN_RE.match(gstin):
         return jsonify({
             'error': 'Invalid GSTIN format. GSTIN must be 15 characters (e.g. 27ABCDE1234F1Z5).'
         }), 400
 
-    import uuid
-    bidders = load_bidders()
     # Check for duplicate GSTIN in this tender
-    existing = next((b for b in bidders if b.get('gstin') == gstin and b.get('tender_id') == data['tender_id']), None)
+    if USE_DATABASE:
+        existing_list = db.list_bidders_db({'tender_id': data['tender_id']})
+        existing = next((b for b in existing_list if b.get('gstin') == gstin), None)
+    else:
+        bidders = load_bidders()
+        existing = next((b for b in bidders if b.get('gstin') == gstin and b.get('tender_id') == data['tender_id']), None)
     if existing:
         return jsonify({'error': 'A bidder with this GSTIN is already registered for this tender', 'bidder_id': existing['id']}), 409
 
@@ -531,26 +577,38 @@ def create_bidder():
         'submitted_at': datetime.now().isoformat(),
         'document_ids': [],
     }
-    bidders.append(bidder)
-    save_bidders(bidders)
 
-    # Audit log — cached
-    try:
-        from services.json_cache import load_cached, save_cached
-        audit = load_cached('audit.json')
-        audit.append({
-            'id':        next_audit_id(audit),
-            'timestamp': datetime.now().isoformat(),
-            'actor':     data.get('name', 'Bidder'),
-            'action':    'Bidder Registered',
-            'detail':    f"{data['name']} (GSTIN: {gstin}) registered for tender {data['tender_id']}.",
+    if USE_DATABASE:
+        db.create_bidder_db(bidder)
+        db.append_audit({
+            'action': 'Bidder Registered',
+            'actor': data.get('name', 'Bidder'),
+            'detail': f"{data['name']} (GSTIN: {gstin}) registered for tender {data['tender_id']}.",
             'tender_id': data['tender_id'],
             'bidder_id': bidder_id,
-            'severity':  'info',
+            'severity': 'info',
+            'timestamp': datetime.now(),
+            'created_at': datetime.now(),
         })
-        save_cached('audit.json', audit)
-    except Exception:
-        pass
+    else:
+        bidders = load_bidders()
+        bidders.append(bidder)
+        save_bidders(bidders)
+        try:
+            audit = load_cached('audit.json')
+            audit.append({
+                'id':        next_audit_id(audit),
+                'timestamp': datetime.now().isoformat(),
+                'actor':     data.get('name', 'Bidder'),
+                'action':    'Bidder Registered',
+                'detail':    f"{data['name']} (GSTIN: {gstin}) registered for tender {data['tender_id']}.",
+                'tender_id': data['tender_id'],
+                'bidder_id': bidder_id,
+                'severity':  'info',
+            })
+            save_cached('audit.json', audit)
+        except Exception:
+            pass
 
     return jsonify(bidder), 201
 
@@ -614,103 +672,122 @@ def submit_officer_decision(bidder_id):
         rejection_reason   = None
 
     # ── Load bidder ───────────────────────────────────────────────────────────
-    bidders = load_bidders()
-    bidder = next((b for b in bidders if b['id'] == bidder_id), None)
+    if USE_DATABASE:
+        bidder = db.get_bidder_db(bidder_id)
+    else:
+        bidders = load_bidders()
+        bidder = next((b for b in bidders if b['id'] == bidder_id), None)
     if not bidder:
         return jsonify({'error': 'Bidder not found'}), 404
 
     now = datetime.now().isoformat()
+    decision_fields = {
+        'officer_decision':    decision,
+        'officer_remarks':     remarks,
+        'decision_officer':    officer,
+        'decision_officer_id': officer_id,
+        'decision_timestamp':  now,
+        'rejection_category':  rejection_category,
+        'rejection_stage':     rejection_stage,
+        'rejection_reason':    rejection_reason,
+        'is_disqualified':     (decision == 'DISQUALIFY'),
+    }
 
-    # ── Persist decision on bidder record ─────────────────────────────────────
-    for b in bidders:
-        if b['id'] == bidder_id:
-            b['officer_decision']    = decision
-            b['officer_remarks']     = remarks
-            b['decision_officer']    = officer
-            b['decision_officer_id'] = officer_id
-            b['decision_timestamp']  = now
-            # Rejection-specific fields (None for QUALIFY / CLARIFICATION)
-            b['rejection_category']  = rejection_category
-            b['rejection_stage']     = rejection_stage
-            b['rejection_reason']    = rejection_reason
-            # Surface a simple boolean flag so the UI can quickly detect rejections
-            b['is_disqualified']     = (decision == 'DISQUALIFY')
-    save_bidders(bidders)
+    if USE_DATABASE:
+        db.update_bidder_db(bidder_id, decision_fields)
+    else:
+        for b in bidders:
+            if b['id'] == bidder_id:
+                b.update(decision_fields)
+        save_bidders(bidders)
 
     # ── Audit trail ───────────────────────────────────────────────────────────
-    try:
-        from services.json_cache import load_cached, save_cached
-        audit = load_cached('audit.json')
-
-        if decision == 'DISQUALIFY':
-            detail = (
-                f'{officer} DISQUALIFIED {bidder.get("name", bidder_id)}. '
-                f'Stage: {rejection_stage}. '
-                f'Category: {rejection_category}. '
-                f'Reason: {rejection_reason}'
-            )
-            if remarks:
-                detail += f' | Additional remarks: {remarks}'
-            severity = 'error'
-        elif decision == 'QUALIFY':
-            detail = (
-                f'{officer} QUALIFIED {bidder.get("name", bidder_id)}.'
-                + (f' Remarks: {remarks}' if remarks else '')
-            )
-            severity = 'info'
-        else:
-            detail = (
-                f'{officer} requested CLARIFICATION for {bidder.get("name", bidder_id)}.'
-                + (f' Remarks: {remarks}' if remarks else '')
-            )
-            severity = 'warning'
-
-        audit.append({
-            'id':                next_audit_id(audit),
-            'timestamp':         now,
-            'actor':             officer,
-            'action':            f'Officer Decision: {decision}',
-            'detail':            detail,
-            'tender_id':         bidder.get('tender_id'),
-            'bidder_id':         bidder_id,
-            'severity':          severity,
-            # Structured rejection fields embedded in the audit record
-            'rejection_category': rejection_category,
-            'rejection_stage':    rejection_stage,
-            'rejection_reason':   rejection_reason,
-        })
-        save_cached('audit.json', audit)
-    except Exception:
-        pass  # Non-fatal — decision already persisted on bidder record
-
-    # ── Auto-create rejection feedback record ─────────────────────────────────
-    # When the officer disqualifies a bidder, a rejection feedback record is
-    # automatically created from the rejection reason so the bidder can read it.
     if decision == 'DISQUALIFY':
+        detail = (
+            f'{officer} DISQUALIFIED {bidder.get("name", bidder_id)}. '
+            f'Stage: {rejection_stage}. '
+            f'Category: {rejection_category}. '
+            f'Reason: {rejection_reason}'
+        )
+        if remarks:
+            detail += f' | Additional remarks: {remarks}'
+        severity = 'error'
+    elif decision == 'QUALIFY':
+        detail = (
+            f'{officer} QUALIFIED {bidder.get("name", bidder_id)}.'
+            + (f' Remarks: {remarks}' if remarks else '')
+        )
+        severity = 'info'
+    else:
+        detail = (
+            f'{officer} requested CLARIFICATION for {bidder.get("name", bidder_id)}.'
+            + (f' Remarks: {remarks}' if remarks else '')
+        )
+        severity = 'warning'
+
+    audit_entry = {
+        'action':             f'Officer Decision: {decision}',
+        'actor':              officer,
+        'detail':             detail,
+        'tender_id':          bidder.get('tender_id'),
+        'bidder_id':          bidder_id,
+        'severity':           severity,
+        'rejection_category': rejection_category,
+        'rejection_stage':    rejection_stage,
+        'rejection_reason':   rejection_reason,
+        'timestamp':          datetime.now(),
+        'created_at':         datetime.now(),
+    }
+    if USE_DATABASE:
         try:
-            import uuid as _uuid
-            fb_records = _load_feedback()
-            fb_records.append({
-                'id':                  f'RFB-{str(_uuid.uuid4())[:6].upper()}',
-                'bidder_id':           bidder_id,
-                'bidder_name':         bidder.get('name', bidder_id),
-                'tender_id':           bidder.get('tender_id'),
-                'officer':             officer,
-                'officer_id':          officer_id,
-                'decision':            'DISQUALIFY',
-                'rejection_stage':     rejection_stage,
-                'rejection_category':  rejection_category,
-                'rejection_reason':    rejection_reason,
-                'officer_remarks':     remarks,
-                'additional_feedback': None,   # optional follow-up message from officer
-                'feedback_sent_at':    None,
-                'created_at':          now,
-                'read_by_bidder':      False,
-                'read_at':             None,
-            })
-            _save_feedback(fb_records)
+            db.append_audit(audit_entry)
         except Exception:
             pass
+    else:
+        try:
+            audit = load_cached('audit.json')
+            audit.append({
+                **audit_entry,
+                'id': next_audit_id(audit),
+                'timestamp': now,
+                'created_at': now,
+            })
+            save_cached('audit.json', audit)
+        except Exception:
+            pass
+
+    # ── Auto-create rejection feedback record ─────────────────────────────────
+    if decision == 'DISQUALIFY':
+        fb_record = {
+            'id':                  f'RFB-{str(uuid.uuid4())[:6].upper()}',
+            'bidder_id':           bidder_id,
+            'bidder_name':         bidder.get('name', bidder_id),
+            'tender_id':           bidder.get('tender_id'),
+            'officer':             officer,
+            'officer_id':          officer_id,
+            'decision':            'DISQUALIFY',
+            'rejection_stage':     rejection_stage,
+            'rejection_category':  rejection_category,
+            'rejection_reason':    rejection_reason,
+            'officer_remarks':     remarks,
+            'additional_feedback': None,
+            'feedback_sent_at':    None,
+            'created_at':          now,
+            'read_by_bidder':      False,
+            'read_at':             None,
+        }
+        if USE_DATABASE:
+            try:
+                db.create_rejection_feedback_db(fb_record)
+            except Exception:
+                pass
+        else:
+            try:
+                fb_records = _load_feedback()
+                fb_records.append(fb_record)
+                _save_feedback(fb_records)
+            except Exception:
+                pass
 
     return jsonify({
         'status':             'recorded',
@@ -727,11 +804,14 @@ def submit_officer_decision(bidder_id):
 # ── Rejection Feedback helpers ────────────────────────────────
 
 def _load_feedback():
+    if USE_DATABASE:
+        return db.list_rejection_feedback_db()
     return load_cached('rejection_feedback.json')
 
 
 def _save_feedback(data):
-    save_cached('rejection_feedback.json', data)
+    if not USE_DATABASE:
+        save_cached('rejection_feedback.json', data)
 
 
 # ── GET — Officer: list all rejection feedback records ────────

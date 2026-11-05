@@ -1,5 +1,5 @@
-﻿"""
-Grievance & Representation Routes — PARAKH AI
+"""
+Grievance & Representation Routes — Veritas AI
 Bidder representations, technical/financial objections, procurement grievances.
 Officer assignment, review, response, escalation.
 Public portal shows only public-safe fields.
@@ -9,9 +9,10 @@ import os
 import uuid
 from datetime import datetime
 from flask import Blueprint, jsonify, request
-from config import DATA_DIR
+from config import DATA_DIR, USE_DATABASE
 from services.audit_utils import next_audit_id
 from routes.auth import get_session, require_role
+import services.database as db
 
 grievance_bp = Blueprint('grievance', __name__)
 
@@ -30,6 +31,18 @@ from services.json_cache import load_cached as load_json, save_cached as save_js
 
 
 def _audit(action, detail, tender_id=None, bidder_id=None, actor='System', severity='info'):
+    if USE_DATABASE:
+        try:
+            db.append_audit({
+                'action': action, 'actor': actor, 'detail': detail,
+                'tender_id': tender_id, 'bidder_id': bidder_id, 'severity': severity,
+                'timestamp': datetime.now(), 'created_at': datetime.now(),
+            })
+            return
+        except Exception as exc:
+            import logging
+            logging.getLogger(__name__).error('DB audit write failed: %s', exc)
+            raise
     audit = load_json('audit.json')
     audit.append({
         'id': next_audit_id(audit),
@@ -45,8 +58,6 @@ def _audit(action, detail, tender_id=None, bidder_id=None, actor='System', sever
 def submit_grievance():
     data = request.get_json(silent=True) or {}
     session = get_session(request)
-    # Sessions store the user under 'user_id' (there is no 'id' key), so the old
-    # lookup always fell through to 'ANON'.
     submitter_id = (session or {}).get('user_id') or data.get('submitter_id', 'ANON')
     submitter_role = (session or {}).get('role', 'BIDDER')
 
@@ -65,8 +76,6 @@ def submit_grievance():
         'id': f'GRV-{str(uuid.uuid4())[:6].upper()}',
         'tender_id': data.get('tender_id'),
         'bid_id': data.get('bid_id'),
-        # A logged-in bidder always files as their own organisation; the body's bidder_id is
-        # only honoured for non-bidder submitters (officer filing on a bidder's behalf).
         'bidder_id': ((session or {}).get('organization_id') if submitter_role == 'BIDDER' and session
                       else data.get('bidder_id')),
         'submitter_id': submitter_id,
@@ -84,13 +93,16 @@ def submit_grievance():
         'response_at': None,
         'closed_at': None,
         'escalated_at': None,
-        'public_note': None,    # public-safe summary
+        'public_note': None,
         'internal_notes': [],
     }
 
-    grievances = load_json('grievances.json')
-    grievances.append(grievance)
-    save_json('grievances.json', grievances)
+    if USE_DATABASE:
+        db.create_grievance_db(grievance)
+    else:
+        grievances = load_json('grievances.json')
+        grievances.append(grievance)
+        save_json('grievances.json', grievances)
 
     _audit('GRIEVANCE_CREATED',
            f'Grievance {grievance["id"]} submitted: {category} — {grievance["subject"][:80]}',
@@ -108,6 +120,17 @@ def list_grievances():
     status = request.args.get('status')
     category = request.args.get('category')
 
+    if USE_DATABASE:
+        filters = {}
+        if tender_id:
+            filters['tender_id'] = tender_id
+        if status:
+            filters['status'] = status
+        grievances = db.list_grievances_db(filters or None)
+        if category:
+            grievances = [g for g in grievances if g.get('category') == category]
+        return jsonify(grievances)
+
     grievances = load_json('grievances.json')
     if tender_id:
         grievances = [g for g in grievances if g.get('tender_id') == tender_id]
@@ -115,7 +138,6 @@ def list_grievances():
         grievances = [g for g in grievances if g.get('status') == status]
     if category:
         grievances = [g for g in grievances if g.get('category') == category]
-
     return jsonify(sorted(grievances, key=lambda x: x.get('submitted_at', ''), reverse=True))
 
 
@@ -127,9 +149,14 @@ def bidder_grievances():
     bidder_id = session.get('organization_id') if session.get('role') == 'BIDDER' else request.args.get('bidder_id')
     if not bidder_id:
         return jsonify({'error': 'bidder_id is required'}), 400
+
+    if USE_DATABASE:
+        all_g = db.list_grievances_db({'bidder_id': bidder_id})
+        safe = [{k: v for k, v in g.items() if k != 'internal_notes'} for g in all_g]
+        return jsonify(safe)
+
     grievances = load_json('grievances.json')
     my_grievances = [g for g in grievances if g.get('bidder_id') == bidder_id or g.get('submitter_id') == bidder_id]
-    # Return safe fields only (no internal_notes)
     safe = [{k: v for k, v in g.items() if k != 'internal_notes'} for g in my_grievances]
     return jsonify(sorted(safe, key=lambda x: x.get('submitted_at', ''), reverse=True))
 
@@ -139,12 +166,19 @@ def bidder_grievances():
 @require_role('OFFICER')
 def assign_grievance(grievance_id):
     data = request.get_json() or {}
-    grievances = load_json('grievances.json')
-    for g in grievances:
-        if g['id'] == grievance_id:
-            g['assigned_to'] = data.get('assigned_to', 'Rajesh Kumar')
-            g['status'] = 'UNDER_REVIEW'
-    save_json('grievances.json', grievances)
+    assigned_to = data.get('assigned_to', 'Rajesh Kumar')
+    if USE_DATABASE:
+        grv = db.get_grievance_db(grievance_id)
+        if not grv:
+            return jsonify({'error': 'Grievance not found'}), 404
+        db.update_grievance_db(grievance_id, {'assigned_to': assigned_to, 'assigned_to_name': assigned_to, 'status': 'UNDER_REVIEW'})
+    else:
+        grievances = load_json('grievances.json')
+        for g in grievances:
+            if g['id'] == grievance_id:
+                g['assigned_to'] = assigned_to
+                g['status'] = 'UNDER_REVIEW'
+        save_json('grievances.json', grievances)
     return jsonify({'status': 'assigned', 'id': grievance_id})
 
 
@@ -156,29 +190,51 @@ def respond_grievance(grievance_id):
     if not response:
         return jsonify({'error': 'Response is required'}), 400
 
-    grievances = load_json('grievances.json')
-    grv = next((g for g in grievances if g['id'] == grievance_id), None)
-    if not grv:
-        return jsonify({'error': 'Grievance not found'}), 404
-
-    for g in grievances:
-        if g['id'] == grievance_id:
-            g['officer_response'] = response
-            g['response_at'] = datetime.now().isoformat()
-            g['status'] = data.get('status', 'RESPONDED')
-            g['public_note'] = data.get('public_note')
-            if data.get('internal_note'):
-                g.setdefault('internal_notes', []).append({
-                    'note': data['internal_note'],
-                    'by': data.get('officer', 'Procurement Officer'),
-                    'at': datetime.now().isoformat(),
-                })
-            if data.get('status') == 'CLOSED':
-                g['closed_at'] = datetime.now().isoformat()
-            if data.get('status') == 'ESCALATED':
-                g['escalated_at'] = datetime.now().isoformat()
-
-    save_json('grievances.json', grievances)
+    if USE_DATABASE:
+        grv = db.get_grievance_db(grievance_id)
+        if not grv:
+            return jsonify({'error': 'Grievance not found'}), 404
+        updates = {
+            'officer_response': response,
+            'response_at': datetime.now(),
+            'status': data.get('status', 'RESPONDED'),
+            'public_note': data.get('public_note'),
+        }
+        if data.get('status') == 'CLOSED':
+            updates['closed_at'] = datetime.now()
+        if data.get('status') == 'ESCALATED':
+            updates['escalated_at'] = datetime.now()
+        if data.get('internal_note'):
+            notes = list(grv.get('internal_notes') or [])
+            notes.append({
+                'note': data['internal_note'],
+                'by': data.get('officer', 'Procurement Officer'),
+                'at': datetime.now().isoformat(),
+            })
+            updates['internal_notes'] = notes
+        db.update_grievance_db(grievance_id, updates)
+    else:
+        grievances = load_json('grievances.json')
+        grv = next((g for g in grievances if g['id'] == grievance_id), None)
+        if not grv:
+            return jsonify({'error': 'Grievance not found'}), 404
+        for g in grievances:
+            if g['id'] == grievance_id:
+                g['officer_response'] = response
+                g['response_at'] = datetime.now().isoformat()
+                g['status'] = data.get('status', 'RESPONDED')
+                g['public_note'] = data.get('public_note')
+                if data.get('internal_note'):
+                    g.setdefault('internal_notes', []).append({
+                        'note': data['internal_note'],
+                        'by': data.get('officer', 'Procurement Officer'),
+                        'at': datetime.now().isoformat(),
+                    })
+                if data.get('status') == 'CLOSED':
+                    g['closed_at'] = datetime.now().isoformat()
+                if data.get('status') == 'ESCALATED':
+                    g['escalated_at'] = datetime.now().isoformat()
+        save_json('grievances.json', grievances)
 
     _audit('GRIEVANCE_RESPONDED',
            f'Grievance {grievance_id} responded: status={data.get("status", "RESPONDED")}',
@@ -193,9 +249,13 @@ def respond_grievance(grievance_id):
 def public_grievance_stats():
     """Public-safe grievance statistics only — no confidential data."""
     tender_id = request.args.get('tender_id')
-    grievances = load_json('grievances.json')
-    if tender_id:
-        grievances = [g for g in grievances if g.get('tender_id') == tender_id]
+    if USE_DATABASE:
+        filters = {'tender_id': tender_id} if tender_id else None
+        grievances = db.list_grievances_db(filters)
+    else:
+        grievances = load_json('grievances.json')
+        if tender_id:
+            grievances = [g for g in grievances if g.get('tender_id') == tender_id]
 
     return jsonify({
         'total': len(grievances),

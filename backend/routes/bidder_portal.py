@@ -7,11 +7,12 @@ import json
 import os
 from datetime import datetime, timedelta
 from flask import Blueprint, jsonify, request
-from config import DATA_DIR
+from config import DATA_DIR, USE_DATABASE
 from services.audit_utils import next_audit_id
 from services.compliance_service import DEMO_COMPLIANCE
 from services.tender_service import get_all_tenders, get_requirements_for_tender, get_tender_by_id
 from routes.auth import get_session, require_role
+import services.database as db
 
 bidder_portal_bp = Blueprint('bidder_portal', __name__)
 
@@ -269,6 +270,8 @@ def my_bids():
     bidder_id = _acting_bidder_id(session)
     if not bidder_id:
         return jsonify({'error': 'bidder_id is required'}), 400
+    if USE_DATABASE:
+        return jsonify(db.list_bids_db({'bidder_id': bidder_id}))
     bids = [b for b in load_json('bids.json') if b['bidder_id'] == bidder_id]
     return jsonify(bids)
 
@@ -281,6 +284,8 @@ def bidder_clarifications():
     bidder_id = _acting_bidder_id(session)
     if not bidder_id:
         return jsonify({'error': 'bidder_id is required'}), 400
+    if USE_DATABASE:
+        return jsonify(db.list_clarifications_db({'bidder_id': bidder_id}))
     clarifications = [c for c in load_json('clarifications.json') if c['bidder_id'] == bidder_id]
     return jsonify(sorted(clarifications, key=lambda x: x.get('requested_at', ''), reverse=True))
 
@@ -294,21 +299,41 @@ def respond_clarification(clarification_id):
         return jsonify({'error': 'Response text required'}), 400
     response_text = response_text.strip()
 
+    if USE_DATABASE:
+        clr = db.get_clarification_db(clarification_id)
+        if not clr:
+            return jsonify({'error': 'Clarification not found'}), 404
+        if clr.get('bidder_id') != get_session(request).get('organization_id'):
+            return jsonify({'error': 'Unauthorized — this clarification was not addressed to you'}), 403
+        db.update_clarification_db(clarification_id, {
+            'response': response_text,
+            'responded_at': datetime.now(),
+            'status': 'PENDING_OFFICER',
+        })
+        db.append_audit({
+            'action': 'Clarification Response Submitted',
+            'actor': clr.get('bidder_id', 'Bidder'),
+            'detail': f'Bidder responded to clarification: {clr.get("subject", "")}',
+            'tender_id': clr.get('tender_id'),
+            'bidder_id': clr.get('bidder_id'),
+            'severity': 'info',
+            'timestamp': datetime.now(),
+            'created_at': datetime.now(),
+        })
+        return jsonify({'status': 'submitted', 'clarification_id': clarification_id})
+
     clarifications = load_json('clarifications.json')
     clr = next((c for c in clarifications if c['id'] == clarification_id), None)
     if not clr:
         return jsonify({'error': 'Clarification not found'}), 404
     if clr.get('bidder_id') != get_session(request).get('organization_id'):
         return jsonify({'error': 'Unauthorized — this clarification was not addressed to you'}), 403
-
     for c in clarifications:
         if c['id'] == clarification_id:
             c['response'] = response_text
             c['responded_at'] = datetime.now().isoformat()
             c['status'] = 'PENDING_OFFICER'
     save_json('clarifications.json', clarifications)
-
-    # Audit trail
     audit = load_json('audit.json')
     audit.append({
         'id': next_audit_id(audit),
@@ -321,7 +346,6 @@ def respond_clarification(clarification_id):
         'severity': 'info',
     })
     save_json('audit.json', audit)
-
     return jsonify({'status': 'submitted', 'clarification_id': clarification_id})
 
 
@@ -365,29 +389,42 @@ def submit_bid():
     if incoming_status == 'SUBMITTED' and price <= 0:
         return jsonify({'error': 'A quoted price greater than zero is required to submit a bid'}), 400
 
-    bids = load_json('bids.json')
-    # A bid that is already in play (anything except a draft or a withdrawn bid)
-    # blocks a new submission for the same bidder + tender.
-    existing = next(
-        (b for b in bids if b['bidder_id'] == bidder_id
-         and b['tender_id'] == tender_id
-         and b.get('status') not in ('DRAFT', 'WITHDRAWN')),
-        None
-    )
-    if existing:
-        return jsonify({
-            'error': (f"You have already submitted bid {existing['id']} for this tender. "
-                      f"Use 'Modify Bid' to change it."),
-            'status': 'already_submitted', 'bid_id': existing['id'],
-        }), 409
-
-    # Check if a DRAFT already exists — update it instead of creating new
-    draft = next(
-        (b for b in bids if b['bidder_id'] == bidder_id
-         and b['tender_id'] == tender_id
-         and b.get('status') == 'DRAFT'),
-        None
-    )
+    if USE_DATABASE:
+        bids = db.list_bids_db({'tender_id': tender_id, 'bidder_id': bidder_id}) if USE_DATABASE else []
+        # Find existing submitted or draft bids
+        existing = next(
+            (b for b in bids if b.get('status') not in ('DRAFT', 'WITHDRAWN')), None
+        )
+        if existing:
+            return jsonify({
+                'error': (f"You have already submitted bid {existing['id']} for this tender. "
+                          f"Use 'Modify Bid' to change it."),
+                'status': 'already_submitted', 'bid_id': existing['id'],
+            }), 409
+        draft = next((b for b in bids if b.get('status') == 'DRAFT'), None)
+    else:
+        bids = load_json('bids.json')
+        # A bid that is already in play (anything except a draft or a withdrawn bid)
+        # blocks a new submission for the same bidder + tender.
+        existing = next(
+            (b for b in bids if b['bidder_id'] == bidder_id
+             and b['tender_id'] == tender_id
+             and b.get('status') not in ('DRAFT', 'WITHDRAWN')),
+            None
+        )
+        if existing:
+            return jsonify({
+                'error': (f"You have already submitted bid {existing['id']} for this tender. "
+                          f"Use 'Modify Bid' to change it."),
+                'status': 'already_submitted', 'bid_id': existing['id'],
+            }), 409
+        # Check if a DRAFT already exists — update it instead of creating new
+        draft = next(
+            (b for b in bids if b['bidder_id'] == bidder_id
+             and b['tender_id'] == tender_id
+             and b.get('status') == 'DRAFT'),
+            None
+        )
 
     # Compute validity expiry
     validity_days = int(data.get('validity_period_days', 120))
@@ -417,51 +454,77 @@ def submit_bid():
         'emd_bank': data.get('emd_bank', ''),
         'emd_amount': data.get('emd_amount', 0),
         'financial_remarks': data.get('financial_remarks', ''),
-        # two-envelope: keep sealed unless this tender already had financial bids opened
-        'financial_bid_opened': any(
-            b.get('financial_bid_opened') and b.get('tender_id') == tender_id
-            for b in bids
-        ),
+        # two-envelope: keep sealed
+        'financial_bid_opened': False,
     }
 
-    if draft:
-        # Update existing draft
-        for b in bids:
-            if b['id'] == draft['id']:
-                b.update(bid_fields)
-                if incoming_status == 'SUBMITTED':
-                    b['submitted_at'] = datetime.now().isoformat()
-                # Re-check financial_bid_opened in case officer opened bids
-                # between when the draft was saved and now
-                b['financial_bid_opened'] = bid_fields['financial_bid_opened']
-        bid_id = draft['id']
+    if USE_DATABASE:
+        if draft:
+            bid_fields_update = dict(bid_fields)
+            if incoming_status == 'SUBMITTED':
+                bid_fields_update['submitted_at'] = datetime.now()
+            db.update_bid_db(draft['id'], bid_fields_update)
+            bid_id = draft['id']
+        else:
+            import uuid as _uuid
+            bid_id = f'BID-SUB-{str(_uuid.uuid4())[:6].upper()}'
+            bid_fields['id'] = bid_id
+            bid_fields['submitted_at'] = datetime.now() if incoming_status == 'SUBMITTED' else None
+            db.create_bid_db(bid_fields)
+        if incoming_status == 'SUBMITTED':
+            db.append_audit({
+                'action': 'Bid Submitted',
+                'actor': session.get('organization_name') or data.get('bidder_name', 'Bidder'),
+                'detail': (
+                    f'Bid {bid_id} submitted for tender {tender_id}. '
+                    f'Quoted: {_format_price(data.get("quoted_price", 0))}. '
+                    f'Delivery: {data.get("delivery_period_days", 90)} days.'
+                ),
+                'tender_id': tender_id,
+                'bidder_id': bidder_id,
+                'severity': 'info',
+                'timestamp': datetime.now(),
+                'created_at': datetime.now(),
+            })
+        saved_bid = db.get_bid_db(bid_id) or bid_fields
     else:
-        bid_id = f'BID-SUB-{str(uuid.uuid4())[:6].upper()}'
-        bid_fields['id'] = bid_id
-        bid_fields['submitted_at'] = datetime.now().isoformat() if incoming_status == 'SUBMITTED' else None
-        bids.append(bid_fields)
+        if draft:
+            # Update existing draft
+            for b in bids:
+                if b['id'] == draft['id']:
+                    b.update(bid_fields)
+                    if incoming_status == 'SUBMITTED':
+                        b['submitted_at'] = datetime.now().isoformat()
+                    b['financial_bid_opened'] = bid_fields['financial_bid_opened']
+            bid_id = draft['id']
+        else:
+            import uuid as _uuid
+            bid_id = f'BID-SUB-{str(_uuid.uuid4())[:6].upper()}'
+            bid_fields['id'] = bid_id
+            bid_fields['submitted_at'] = datetime.now().isoformat() if incoming_status == 'SUBMITTED' else None
+            bids.append(bid_fields)
 
-    save_json('bids.json', bids)
+        save_json('bids.json', bids)
 
-    if incoming_status == 'SUBMITTED':
-        audit = load_json('audit.json')
-        audit.append({
-            'id': next_audit_id(audit),
-            'timestamp': datetime.now().isoformat(),
-            'actor': session.get('organization_name') or data.get('bidder_name', 'Bidder'),
-            'action': 'Bid Submitted',
-            'detail': (
-                f'Bid {bid_id} submitted for tender {tender_id}. '
-                f'Quoted: {_format_price(data.get("quoted_price", 0))}. '
-                f'Delivery: {data.get("delivery_period_days", 90)} days.'
-            ),
-            'tender_id': tender_id,
-            'bidder_id': bidder_id,
-            'severity': 'info',
-        })
-        save_json('audit.json', audit)
+        if incoming_status == 'SUBMITTED':
+            audit = load_json('audit.json')
+            audit.append({
+                'id': next_audit_id(audit),
+                'timestamp': datetime.now().isoformat(),
+                'actor': session.get('organization_name') or data.get('bidder_name', 'Bidder'),
+                'action': 'Bid Submitted',
+                'detail': (
+                    f'Bid {bid_id} submitted for tender {tender_id}. '
+                    f'Quoted: {_format_price(data.get("quoted_price", 0))}. '
+                    f'Delivery: {data.get("delivery_period_days", 90)} days.'
+                ),
+                'tender_id': tender_id,
+                'bidder_id': bidder_id,
+                'severity': 'info',
+            })
+            save_json('audit.json', audit)
 
-    saved_bid = next((b for b in bids if b['id'] == bid_id), bid_fields)
+        saved_bid = next((b for b in bids if b['id'] == bid_id), bid_fields)
     return jsonify({
         'status': 'draft_saved' if incoming_status == 'DRAFT' else 'submitted',
         'bid_id': bid_id,

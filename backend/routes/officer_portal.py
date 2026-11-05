@@ -1,14 +1,15 @@
 """
-Officer Portal Extended Routes - PARAKH AI
+Officer Portal Extended Routes - Veritas AI
 Evaluation tasks, clarifications management, feedback center, leaderboard.
 """
 import json
 import os
 from datetime import datetime
 from flask import Blueprint, jsonify, request
-from config import DATA_DIR
+from config import DATA_DIR, USE_DATABASE
 from services.audit_utils import next_audit_id
 from routes.auth import require_role, get_session
+import services.database as db
 
 officer_portal_bp = Blueprint('officer_portal', __name__)
 
@@ -22,6 +23,13 @@ from services.json_cache import load_cached as load_json, save_cached as save_js
 def get_tasks():
     tender_id = request.args.get('tender_id')
     status = request.args.get('status')
+    if USE_DATABASE:
+        filters = {}
+        if tender_id:
+            filters['tender_id'] = tender_id
+        if status:
+            filters['status'] = status
+        return jsonify(db.list_eval_tasks_db(filters or None))
     tasks = load_json('evaluation_tasks.json')
     if tender_id:
         tasks = [t for t in tasks if t.get('tender_id') == tender_id]
@@ -34,7 +42,6 @@ def get_tasks():
 @require_role('OFFICER')
 def create_task():
     data = request.get_json() or {}
-    tasks = load_json('evaluation_tasks.json')
     import uuid
     task = {
         'id': f'TASK-{str(uuid.uuid4())[:6].upper()}',
@@ -46,6 +53,7 @@ def create_task():
         'title': data.get('title', ''),
         'assigned_to': data.get('assigned_to', 'Rajesh Kumar'),
         'assigned_to_id': data.get('assigned_to_id', 'USR-001'),
+        'assigned_to_name': data.get('assigned_to', 'Rajesh Kumar'),
         'priority': data.get('priority', 'MEDIUM'),
         'status': 'NOT_STARTED',
         'created_at': datetime.now().isoformat(),
@@ -53,8 +61,12 @@ def create_task():
         'completed_at': None,
         'comments': data.get('comments'),
     }
-    tasks.append(task)
-    save_json('evaluation_tasks.json', tasks)
+    if USE_DATABASE:
+        db.create_eval_task_db(task)
+    else:
+        tasks = load_json('evaluation_tasks.json')
+        tasks.append(task)
+        save_json('evaluation_tasks.json', tasks)
     return jsonify(task), 201
 
 
@@ -62,6 +74,15 @@ def create_task():
 @require_role('OFFICER')
 def update_task(task_id):
     data = request.get_json() or {}
+    if USE_DATABASE:
+        task = db.get_eval_task_db(task_id)
+        if not task:
+            return jsonify({'error': 'Task not found'}), 404
+        updates = {k: v for k, v in data.items() if k != 'id'}
+        if data.get('status') == 'COMPLETED' and not task.get('completed_at'):
+            updates['completed_at'] = datetime.now()
+        db.update_eval_task_db(task_id, updates)
+        return jsonify(db.get_eval_task_db(task_id))
     tasks = load_json('evaluation_tasks.json')
     task = next((t for t in tasks if t['id'] == task_id), None)
     if not task:
@@ -81,6 +102,13 @@ def update_task(task_id):
 def officer_clarifications():
     tender_id = request.args.get('tender_id')
     bidder_id = request.args.get('bidder_id')
+    if USE_DATABASE:
+        filters = {}
+        if tender_id:
+            filters['tender_id'] = tender_id
+        if bidder_id:
+            filters['bidder_id'] = bidder_id
+        return jsonify(db.list_clarifications_db(filters or None))
     clarifications = load_json('clarifications.json')
     if tender_id:
         clarifications = [c for c in clarifications if c.get('tender_id') == tender_id]
@@ -93,7 +121,6 @@ def officer_clarifications():
 @require_role('OFFICER')
 def create_clarification():
     data = request.get_json() or {}
-    clarifications = load_json('clarifications.json')
     import uuid
     clr = {
         'id': f'CLR-{str(uuid.uuid4())[:6].upper()}',
@@ -112,21 +139,31 @@ def create_clarification():
         'officer_notes': data.get('officer_notes'),
         'severity': data.get('severity', 'MEDIUM'),
     }
-    clarifications.append(clr)
-    save_json('clarifications.json', clarifications)
-
-    audit = load_json('audit.json')
-    audit.append({
-        'id': next_audit_id(audit),
-        'timestamp': datetime.now().isoformat(),
-        'actor': data.get('requested_by', 'Rajesh Kumar'),
+    audit_entry = {
         'action': 'Clarification Requested',
+        'actor': data.get('requested_by', 'Rajesh Kumar'),
         'detail': f'Officer requested clarification: {clr["subject"]}',
         'tender_id': data.get('tender_id'),
         'bidder_id': data.get('bidder_id'),
         'severity': 'warning',
-    })
-    save_json('audit.json', audit)
+        'timestamp': datetime.now(),
+        'created_at': datetime.now(),
+    }
+    if USE_DATABASE:
+        db.create_clarification_db(clr)
+        db.append_audit(audit_entry)
+    else:
+        clarifications = load_json('clarifications.json')
+        clarifications.append(clr)
+        save_json('clarifications.json', clarifications)
+        audit = load_json('audit.json')
+        audit.append({
+            **audit_entry,
+            'id': next_audit_id(audit),
+            'timestamp': datetime.now().isoformat(),
+            'created_at': datetime.now().isoformat(),
+        })
+        save_json('audit.json', audit)
     return jsonify(clr), 201
 
 
@@ -134,13 +171,20 @@ def create_clarification():
 @require_role('OFFICER')
 def resolve_clarification(clr_id):
     data = request.get_json() or {}
-    clarifications = load_json('clarifications.json')
-    for c in clarifications:
-        if c['id'] == clr_id:
-            c['status'] = data.get('status', 'RESOLVED')
-            c['officer_notes'] = data.get('officer_notes', '')
-            c['resolved_at'] = datetime.now().isoformat()
-    save_json('clarifications.json', clarifications)
+    if USE_DATABASE:
+        db.update_clarification_db(clr_id, {
+            'status': data.get('status', 'RESOLVED'),
+            'officer_notes': data.get('officer_notes', ''),
+            'resolved_at': datetime.now(),
+        })
+    else:
+        clarifications = load_json('clarifications.json')
+        for c in clarifications:
+            if c['id'] == clr_id:
+                c['status'] = data.get('status', 'RESOLVED')
+                c['officer_notes'] = data.get('officer_notes', '')
+                c['resolved_at'] = datetime.now().isoformat()
+        save_json('clarifications.json', clarifications)
     return jsonify({'status': 'updated', 'id': clr_id})
 
 
@@ -150,6 +194,14 @@ def resolve_clarification(clr_id):
 def officer_feedback():
     priority = request.args.get('priority')
     status = request.args.get('status')
+    if USE_DATABASE:
+        filters = {}
+        if status:
+            filters['status'] = status
+        feedback = db.list_feedback_db(filters or None)
+        if priority:
+            feedback = [f for f in feedback if f.get('priority') == priority]
+        return jsonify(feedback)
     feedback = load_json('feedback.json')
     if priority:
         feedback = [f for f in feedback if f.get('priority') == priority]
@@ -162,31 +214,51 @@ def officer_feedback():
 @require_role('OFFICER')
 def respond_feedback(fb_id):
     data = request.get_json() or {}
-    feedback = load_json('feedback.json')
-    fb = next((f for f in feedback if f['id'] == fb_id), None)
-    if not fb:
-        return jsonify({'error': 'Feedback not found'}), 404
-    for f in feedback:
-        if f['id'] == fb_id:
-            f['public_response'] = data.get('public_response', '')
-            f['internal_notes'] = data.get('internal_notes', f.get('internal_notes', ''))
-            f['status'] = data.get('status', 'RESOLVED')
-            if data.get('status') == 'RESOLVED':
-                f['resolved_at'] = datetime.now().isoformat()
-    save_json('feedback.json', feedback)
-
-    audit = load_json('audit.json')
-    audit.append({
-        'id': next_audit_id(audit),
-        'timestamp': datetime.now().isoformat(),
-        'actor': 'Rajesh Kumar',
+    audit_entry = {
         'action': 'Feedback Responded',
+        'actor': 'Rajesh Kumar',
         'detail': f'Officer responded to feedback {fb_id}',
-        'tender_id': fb.get('tender_id'),
-        'bidder_id': None,
         'severity': 'info',
-    })
-    save_json('audit.json', audit)
+        'timestamp': datetime.now(),
+        'created_at': datetime.now(),
+    }
+    if USE_DATABASE:
+        fb = db.get_feedback_db(fb_id)
+        if not fb:
+            return jsonify({'error': 'Feedback not found'}), 404
+        updates = {
+            'public_response': data.get('public_response', ''),
+            'internal_notes': data.get('internal_notes', fb.get('internal_notes', '')),
+            'status': data.get('status', 'RESOLVED'),
+        }
+        if data.get('status') == 'RESOLVED':
+            updates['resolved_at'] = datetime.now()
+        audit_entry['tender_id'] = fb.get('tender_id')
+        db.update_feedback_db(fb_id, updates)
+        db.append_audit(audit_entry)
+    else:
+        feedback = load_json('feedback.json')
+        fb = next((f for f in feedback if f['id'] == fb_id), None)
+        if not fb:
+            return jsonify({'error': 'Feedback not found'}), 404
+        for f in feedback:
+            if f['id'] == fb_id:
+                f['public_response'] = data.get('public_response', '')
+                f['internal_notes'] = data.get('internal_notes', f.get('internal_notes', ''))
+                f['status'] = data.get('status', 'RESOLVED')
+                if data.get('status') == 'RESOLVED':
+                    f['resolved_at'] = datetime.now().isoformat()
+        save_json('feedback.json', feedback)
+        audit = load_json('audit.json')
+        audit.append({
+            **audit_entry,
+            'id': next_audit_id(audit),
+            'tender_id': fb.get('tender_id'),
+            'bidder_id': None,
+            'timestamp': datetime.now().isoformat(),
+            'created_at': datetime.now().isoformat(),
+        })
+        save_json('audit.json', audit)
     return jsonify({'status': 'responded', 'id': fb_id})
 
 
