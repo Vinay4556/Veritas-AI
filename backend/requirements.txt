@@ -14,5 +14,6 @@ sqlalchemy>=2.0
 itsdangerous>=2.1
 flask-limiter>=3.5.0
 bcrypt>=4.0.1
+pytest>=7.4,<9.2
 # Optional: OCR for scanned images (also needs the Tesseract binary installed)
 # pytesseract>=0.3.10

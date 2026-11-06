@@ -1161,11 +1161,13 @@ def conflict_declaration(tender_id):
 
     if USE_DATABASE:
         db_record = {
-            'tender_id':    tender_id,
-            'declared_by':  actor_id,
-            'conflict_type': data.get('action', 'NONE'),
-            'description':  data.get('conflict_reason', ''),
-            'resolved':     False,
+            'tender_id':      tender_id,
+            'officer_id':     actor_id,
+            'officer_name':   data.get('officer_name', 'Procurement Officer'),
+            'has_conflict':   data.get('has_conflict', False),
+            'conflict_reason': data.get('conflict_reason', ''),
+            'action':         data.get('action', 'NONE'),
+            'resolved':       False,
         }
         db.create_conflict_declaration_db(db_record)
         db.append_audit({
@@ -1295,56 +1297,108 @@ def global_search():
 
     results = []
 
-    # Tenders
-    tenders = load_json('tenders.json') if isinstance(load_json('tenders.json'), list) else []
-    for t in tenders:
-        if q in (t.get('id') or '').lower() or q in (t.get('title') or '').lower() or q in (t.get('department') or '').lower():
-            results.append({
-                'type': 'tender',
-                'id': t['id'],
-                'title': t['title'],
-                'subtitle': f"{t.get('department', '')} · {t.get('status', '')}",
-                'url': f'/tenders/{t["id"]}',
-            })
-
-    # Bidders (officer only)
-    if role == 'OFFICER':
-        bidders = load_json('bidders.json')
-        for b in bidders:
-            if (q in (b.get('name') or '').lower() or q in (b.get('gstin') or '').lower() or
-                    q in (b.get('pan') or '').lower() or q in (b.get('id') or '').lower() or
-                    q in (b.get('udyam_no') or '').lower() or q in (b.get('cin') or '').lower()):
+    if USE_DATABASE:
+        # ── PostgreSQL path ───────────────────────────────────────────
+        all_tenders = db.list_tenders_db() or []
+        for t in all_tenders:
+            if (q in (t.get('id') or '').lower() or
+                    q in (t.get('title') or '').lower() or
+                    q in (t.get('department') or '').lower()):
                 results.append({
-                    'type': 'bidder',
-                    'id': b['id'],
-                    'title': b['name'],
-                    'subtitle': f"GSTIN: {b.get('gstin', '')} · {b.get('id', '')}",
-                    'url': f'/bidders/{b["id"]}',
+                    'type': 'tender',
+                    'id': t['id'],
+                    'title': t['title'],
+                    'subtitle': f"{t.get('department', '')} · {t.get('status', '')}",
+                    'url': f'/tenders/{t["id"]}',
                 })
 
-        # Bids
-        bids = load_json('bids.json')
-        for b in bids:
-            if q in (b.get('id') or '').lower() or q in (b.get('bidder_name') or '').lower():
+        if role == 'OFFICER':
+            for b in (db.list_bidders_db() or []):
+                if (q in (b.get('name') or '').lower() or q in (b.get('gstin') or '').lower() or
+                        q in (b.get('pan') or '').lower() or q in (b.get('id') or '').lower() or
+                        q in (b.get('udyam_no') or '').lower() or q in (b.get('cin') or '').lower()):
+                    results.append({
+                        'type': 'bidder',
+                        'id': b['id'],
+                        'title': b['name'],
+                        'subtitle': f"GSTIN: {b.get('gstin', '')} · {b.get('id', '')}",
+                        'url': f'/bidders/{b["id"]}',
+                    })
+
+            for b in (db.list_bids_db() or []):
+                if q in (b.get('id') or '').lower() or q in (b.get('bidder_name') or '').lower():
+                    results.append({
+                        'type': 'bid',
+                        'id': b['id'],
+                        'title': f'Bid {b["id"]}',
+                        'subtitle': f"{b.get('bidder_name', '')} · {b.get('status', '')}",
+                        'url': f'/bid-comparison?tender={b.get("tender_id", "")}',
+                    })
+
+            for c in (db.list_contracts_db() or []):
+                if (q in (c.get('id') or '').lower() or q in (c.get('bidder_name') or '').lower() or
+                        q in (c.get('contract_reference') or '').lower()):
+                    results.append({
+                        'type': 'contract',
+                        'id': c['id'],
+                        'title': f'Contract {c["id"]}',
+                        'subtitle': f"{c.get('bidder_name', '')} · {c.get('contract_reference', '')}",
+                        'url': '/contracts',
+                    })
+    else:
+        # ── JSON path ─────────────────────────────────────────────────
+        # Tenders
+        tenders = load_json('tenders.json') if isinstance(load_json('tenders.json'), list) else []
+        for t in tenders:
+            if (q in (t.get('id') or '').lower() or
+                    q in (t.get('title') or '').lower() or
+                    q in (t.get('department') or '').lower()):
                 results.append({
-                    'type': 'bid',
-                    'id': b['id'],
-                    'title': f'Bid {b["id"]}',
-                    'subtitle': f"{b.get('bidder_name', '')} · {b.get('status', '')}",
-                    'url': f'/bid-comparison?tender={b.get("tender_id", "")}',
+                    'type': 'tender',
+                    'id': t['id'],
+                    'title': t['title'],
+                    'subtitle': f"{t.get('department', '')} · {t.get('status', '')}",
+                    'url': f'/tenders/{t["id"]}',
                 })
 
-        # Contracts
-        contracts = load_json('contracts.json')
-        for c in contracts:
-            if (q in (c.get('id') or '').lower() or q in (c.get('bidder_name') or '').lower() or
-                    q in (c.get('contract_reference') or '').lower()):
-                results.append({
-                    'type': 'contract',
-                    'id': c['id'],
-                    'title': f'Contract {c["id"]}',
-                    'subtitle': f"{c.get('bidder_name', '')} · {c.get('contract_reference', '')}",
-                    'url': '/contracts',
-                })
+        # Bidders (officer only)
+        if role == 'OFFICER':
+            bidders = load_json('bidders.json')
+            for b in bidders:
+                if (q in (b.get('name') or '').lower() or q in (b.get('gstin') or '').lower() or
+                        q in (b.get('pan') or '').lower() or q in (b.get('id') or '').lower() or
+                        q in (b.get('udyam_no') or '').lower() or q in (b.get('cin') or '').lower()):
+                    results.append({
+                        'type': 'bidder',
+                        'id': b['id'],
+                        'title': b['name'],
+                        'subtitle': f"GSTIN: {b.get('gstin', '')} · {b.get('id', '')}",
+                        'url': f'/bidders/{b["id"]}',
+                    })
+
+            # Bids
+            bids = load_json('bids.json')
+            for b in bids:
+                if q in (b.get('id') or '').lower() or q in (b.get('bidder_name') or '').lower():
+                    results.append({
+                        'type': 'bid',
+                        'id': b['id'],
+                        'title': f'Bid {b["id"]}',
+                        'subtitle': f"{b.get('bidder_name', '')} · {b.get('status', '')}",
+                        'url': f'/bid-comparison?tender={b.get("tender_id", "")}',
+                    })
+
+            # Contracts
+            contracts = load_json('contracts.json')
+            for c in contracts:
+                if (q in (c.get('id') or '').lower() or q in (c.get('bidder_name') or '').lower() or
+                        q in (c.get('contract_reference') or '').lower()):
+                    results.append({
+                        'type': 'contract',
+                        'id': c['id'],
+                        'title': f'Contract {c["id"]}',
+                        'subtitle': f"{c.get('bidder_name', '')} · {c.get('contract_reference', '')}",
+                        'url': '/contracts',
+                    })
 
     return jsonify({'results': results[:20], 'query': q, 'total': len(results)})

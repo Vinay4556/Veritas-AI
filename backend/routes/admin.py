@@ -5,6 +5,7 @@ Dual-mode: PostgreSQL (USE_DATABASE=True) or JSON cache (USE_DATABASE=False).
 """
 from flask import Blueprint, jsonify, request
 from config import USE_DATABASE
+import os
 from services.json_cache import load_cached, save_cached, invalidate_all
 from routes.auth import require_role
 import services.database as db
@@ -88,7 +89,7 @@ def delete_all_documents():
     except Exception as e:
         return jsonify({
             'success': False,
-            'error': f'Delete failed: {str(e)}'
+            'error': f'Delete failed: {str(e) if os.environ.get("DEBUG_ERRORS") else "Internal error"}'
         }), 500
 
 
@@ -190,7 +191,7 @@ def reset_all_compliance():
     except Exception as e:
         return jsonify({
             'success': False,
-            'error': f'Reset failed: {str(e)}'
+            'error': f'Reset failed: {str(e) if os.environ.get("DEBUG_ERRORS") else "Internal error"}'
         }), 500
 
 
@@ -301,7 +302,7 @@ def reset_demo_compliance():
     except Exception as e:
         return jsonify({
             'success': False,
-            'error': f'Reset failed: {str(e)}'
+            'error': f'Reset failed: {str(e) if os.environ.get("DEBUG_ERRORS") else "Internal error"}'
         }), 500
 
 
@@ -332,7 +333,7 @@ def cleanup_old_reports():
     except Exception as e:
         return jsonify({
             'success': False,
-            'error': f'Cleanup failed: {str(e)}'
+            'error': f'Cleanup failed: {str(e) if os.environ.get("DEBUG_ERRORS") else "Internal error"}'
         }), 500
 
 
@@ -357,7 +358,7 @@ def cleanup_expired_tokens():
     except Exception as e:
         return jsonify({
             'success': False,
-            'error': f'Cleanup failed: {str(e)}'
+            'error': f'Cleanup failed: {str(e) if os.environ.get("DEBUG_ERRORS") else "Internal error"}'
         }), 500
 
 
@@ -404,5 +405,5 @@ def admin_status():
 
     except Exception as e:
         return jsonify({
-            'error': f'Status check failed: {str(e)}'
+            'error': f'Status check failed: {str(e) if os.environ.get("DEBUG_ERRORS") else "Internal error"}'
         }), 500
