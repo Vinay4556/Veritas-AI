@@ -59,6 +59,9 @@ def _check_password(user: dict, password: str) -> bool:
         return stored == _hash_password_sha256(password)
     # Plaintext fallback — local demo users only; never fires in DB mode once
     # the rehash-on-login path has upgraded the stored value.
+    from config import USE_DATABASE
+    if USE_DATABASE or os.environ.get('FLASK_ENV') == 'production':
+        return False
     return stored == password
 
 

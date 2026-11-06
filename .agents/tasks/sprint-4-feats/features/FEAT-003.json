@@ -1,0 +1,31 @@
+{
+  "id": "FEAT-003",
+  "type": "fix",
+  "description": "Security hardening (Phase 7): (1) backend/create_demo_users.py — add deprecation header comment, add FLASK_ENV=production exit guard, mask cleartext password prints. (2) backend/routes/auth.py — block plaintext password fallback in DB/production mode. (3) backend/routes/admin.py — add POST /api/admin/cleanup-expired-tokens endpoint. These three changes are independent of each other and of FEAT-001/FEAT-002, but are placed after FEAT-002 so the admin.py file is already in its final state before this FEAT adds the new endpoint.",
+  "status": "completed",
+  "steps": [
+    "Step 1 — backend/create_demo_users.py: Read the file fully first. Add a multi-line deprecation comment block at the top of the module (after the docstring) with text: 'DEPRECATED: This script uses SHA-256 password hashing and is NOT safe for production use. Use backend/scripts/create_demo_users.py instead (bcrypt). This file is retained for documentation purposes only. Referenced in: SETUP_GUIDE.md, sprint completion reports.'. Add an env guard immediately after the imports: `if os.environ.get('FLASK_ENV') == 'production': print('ERROR: create_demo_users.py must not be run in production. Use backend/scripts/create_demo_users.py instead.'); exit(1)`. Replace the cleartext password print line `print(f\"✓ Created user: {email} (password: {user_data['password']})\")` with `print(f\"✓ Created user: {email} (password: [REDACTED])\")`. Also replace the footer `print` lines that echo literal credentials with `print('  Officer: officer@demo.gov / [REDACTED]')` etc. Do NOT delete any functional code — only add guard and redact prints.",
+
+    "Step 2 — backend/routes/auth.py _check_password(): Read lines 44-65. The plaintext fallback is the last line of _check_password: `return stored == password`. Add a production guard before it: `from config import USE_DATABASE; if USE_DATABASE or os.environ.get('FLASK_ENV') == 'production': return False`. This ensures production users with bcrypt hashes continue to work normally (they hit branch 1 at the top), while a misconfigured production user with no hash cannot authenticate via plaintext. Local dev JSON demo users (who may have plain passwords in users.json) continue to work when USE_DATABASE=False and FLASK_ENV != 'production'.",
+
+    "Step 3 — backend/routes/admin.py: After the cleanup_old_reports() endpoint (at the end of the file), add a new route: `@admin_bp.route('/api/admin/cleanup-expired-tokens', methods=['POST']) @require_role('OFFICER') def cleanup_expired_tokens():`. In the function body: if USE_DATABASE, call `from services.database import cleanup_expired_revocations; deleted = cleanup_expired_revocations(); return jsonify({'success': True, 'deleted': deleted})`. If not USE_DATABASE, return jsonify({'success': True, 'deleted': 0, 'note': 'Token cleanup only applies in database mode'}).",
+
+    "Step 4: Syntax-check all three modified files: python -m py_compile backend/create_demo_users.py, backend/routes/auth.py, backend/routes/admin.py."
+  ],
+  "acceptance_criteria": [
+    "python -m py_compile exits 0 for all 3 files",
+    "backend/create_demo_users.py contains DEPRECATED comment block near top",
+    "backend/create_demo_users.py exits with error message when FLASK_ENV=production (no actual DB write occurs)",
+    "backend/create_demo_users.py does not print plaintext passwords — all credential prints show [REDACTED]",
+    "backend/routes/auth.py _check_password() returns False before reaching plaintext comparison when USE_DATABASE is True",
+    "backend/routes/admin.py has POST /api/admin/cleanup-expired-tokens route requiring OFFICER role"
+  ],
+  "verification": [
+    "python -m py_compile d:\\Veritas-AI-debugged\\Veritas-AI\\Veritas-AI\\backend\\create_demo_users.py",
+    "python -m py_compile d:\\Veritas-AI-debugged\\Veritas-AI\\Veritas-AI\\backend\\routes\\auth.py",
+    "python -m py_compile d:\\Veritas-AI-debugged\\Veritas-AI\\Veritas-AI\\backend\\routes\\admin.py",
+    "Set-Item Env:FLASK_ENV 'production'; cd d:\\Veritas-AI-debugged\\Veritas-AI\\Veritas-AI\\backend; python create_demo_users.py; $LASTEXITCODE should be 1 and output should contain 'ERROR: create_demo_users.py must not be run in production'"
+  ],
+  "blocked_reason": null,
+  "findings": "All three steps implemented and verified. (1) backend/create_demo_users.py: deprecation comment block added at top, FLASK_ENV=production exit guard added after imports (exit code 1), all credential prints redacted to [REDACTED]. (2) backend/routes/auth.py _check_password(): production guard added before plaintext fallback — returns False when USE_DATABASE=True or FLASK_ENV=production. (3) backend/routes/admin.py: POST /api/admin/cleanup-expired-tokens added with @require_role('OFFICER'), calls cleanup_expired_revocations() in DB mode, returns deleted count; returns {deleted:0,note:...} in JSON mode. All py_compile checks exit 0. Production guard test: FLASK_ENV=production outputs ERROR message and exits with code 1."
+}

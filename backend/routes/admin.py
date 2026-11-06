@@ -336,6 +336,31 @@ def cleanup_old_reports():
         }), 500
 
 
+@admin_bp.route('/api/admin/cleanup-expired-tokens', methods=['POST'])
+@require_role('OFFICER')
+def cleanup_expired_tokens():
+    """
+    Delete expired revoked tokens from the database.
+    Only meaningful in database mode — no-op in JSON mode.
+    """
+    try:
+        if USE_DATABASE:
+            from services.database import cleanup_expired_revocations
+            deleted = cleanup_expired_revocations()
+            return jsonify({'success': True, 'deleted': deleted}), 200
+        else:
+            return jsonify({
+                'success': True,
+                'deleted': 0,
+                'note': 'Token cleanup only applies in database mode'
+            }), 200
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': f'Cleanup failed: {str(e)}'
+        }), 500
+
+
 @admin_bp.route('/api/admin/status', methods=['GET'])
 @require_role('OFFICER')
 def admin_status():
