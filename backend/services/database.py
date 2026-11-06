@@ -1225,32 +1225,51 @@ def cleanup_expired_revocations() -> int:
 
 # ── Conflict Declarations ────────────────────────────────────────────────────
 # Table created in Sprint 2 migration (20250719_120000_sprint2_all_entities.py).
-# Columns: id, tender_id, bidder_id, declared_by, declared_at, conflict_type,
-#          description, resolved, resolved_at, created_at.
-# Field mapping from endpoint: officer_id -> declared_by,
+# Sprint 4 migration (c9e4d3b2a156) adds: officer_id (renamed from declared_by),
+#   officer_name VARCHAR(200), has_conflict BOOLEAN DEFAULT FALSE,
+#   action VARCHAR(20) DEFAULT 'NONE'.
+# Full column set post-Sprint-4:
+#   id, tender_id, bidder_id, officer_id, officer_name, declared_at,
+#   conflict_type, description, has_conflict, action,
+#   resolved, resolved_at, created_at.
+# Field mapping from endpoint: officer_id -> officer_id,
+#                               officer_name -> officer_name,
 #                               conflict_reason -> description,
-#                               action -> conflict_type.
+#                               has_conflict -> has_conflict,
+#                               action -> action (separate column),
+#                               conflict_type -> conflict_type.
 
 def create_conflict_declaration_db(data: Dict) -> Optional[Dict]:
-    """Insert a new conflict declaration row. Returns the inserted record."""
+    """Insert a new conflict declaration row. Returns the inserted record.
+
+    Accepts the following endpoint field names and maps them to DB columns:
+      officer_id      -> officer_id   (post-Sprint-4 renamed from declared_by)
+      officer_name    -> officer_name
+      has_conflict    -> has_conflict
+      conflict_reason -> description
+      action          -> action       (separate column post-Sprint-4)
+      conflict_type   -> conflict_type
+    """
+    import secrets
     data = dict(data)
     data.setdefault('created_at', datetime.now())
     data.setdefault('declared_at', datetime.now())
     data.setdefault('resolved', False)
-    # Accept either officer_id or declared_by as the actor field
-    if 'officer_id' in data and 'declared_by' not in data:
-        data['declared_by'] = data.pop('officer_id')
-    # Accept either conflict_reason or description
+    data.setdefault('has_conflict', False)
+    data.setdefault('action', 'NONE')
+
+    # Generate ID if not provided
+    if 'id' not in data:
+        data['id'] = 'CFLCT-' + secrets.token_hex(3).upper()
+
+    # Accept conflict_reason as alias for description
     if 'conflict_reason' in data and 'description' not in data:
         data['description'] = data.pop('conflict_reason')
-    # Accept either action or conflict_type
-    if 'action' in data and 'conflict_type' not in data:
-        data['conflict_type'] = data.pop('action')
-    # Strip fields not present in the DB schema
-    for extra in ('officer_name', 'has_conflict'):
-        data.pop(extra, None)
+    elif 'conflict_reason' in data:
+        data.pop('conflict_reason')
+
     insert_record('conflict_declarations', data, returning='id')
-    return get_conflict_declaration_db(data['id']) if 'id' in data else None
+    return get_conflict_declaration_db(data['id'])
 
 
 def list_conflict_declarations_db(filters: Dict = None) -> List[Dict]:

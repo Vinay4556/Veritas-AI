@@ -13,6 +13,7 @@ import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 
+from config import USE_DATABASE
 from routes.auth import require_role
 from services.compliance_service import (
     get_compliance_results,
@@ -21,11 +22,14 @@ from services.compliance_service import (
 )
 from services.tender_service import get_requirements_for_tender, get_tender_by_id
 from services.document_service import get_documents_for_bidder
+import services.database as db
 
 officer_summary_bp = Blueprint('officer_summary', __name__)
 
 
 def _load_bidders():
+    if USE_DATABASE:
+        return db.list_bidders_db()
     from services.json_cache import load_cached
     return load_cached('bidders.json')
 
@@ -36,26 +40,24 @@ def _load_activity_for_tender(tender_id):
     them as a unified timeline sorted newest-first.
 
     Sources:
-      - audit.json            → officer decisions, analysis runs, corrigenda, bids, etc.
-      - documents.json        → every document upload for bidders in this tender
-      - rejection_feedback.json → rejection feedback records & sent-feedback events
-      - bids.json             → bid submissions, stage changes
-      - clarifications.json   → clarification requests and responses
+      - audit            → officer decisions, analysis runs, corrigenda, bids, etc.
+      - documents        → every document upload for bidders in this tender
+      - rejection_feedback → rejection feedback records & sent-feedback events
+      - bids             → bid submissions, stage changes
+      - clarifications   → clarification requests and responses
     """
-    import json as _json
-    import os as _os
-    from config import DATA_DIR
-
-    def _load(fname):
-        from services.json_cache import load_cached
-        return load_cached(fname)
+    from services.json_cache import load_cached
 
     events = []
 
     # ── 1. Audit trail ────────────────────────────────────────────
-    for entry in _load('audit.json'):
-        if entry.get('tender_id') != tender_id:
-            continue
+    if USE_DATABASE:
+        audit_entries = db.list_audits(tender_id=tender_id)
+    else:
+        audit_entries = [a for a in load_cached('audit.json')
+                         if a.get('tender_id') == tender_id]
+
+    for entry in audit_entries:
         events.append({
             'timestamp':   entry.get('timestamp', ''),
             'source':      'audit',
@@ -73,16 +75,17 @@ def _load_activity_for_tender(tender_id):
     # ── 2. Document uploads ───────────────────────────────────────
     # Resolve which bidder IDs belong to this tender
     tender_bidder_ids = {
-        b['id'] for b in _load('bidders.json')
+        b['id'] for b in _load_bidders()
         if b.get('tender_id') == tender_id
     }
-    for doc in _load('documents.json'):
+    from services.document_service import get_all_documents
+    for doc in get_all_documents():
         if doc.get('bidder_id') not in tender_bidder_ids:
             continue
         if not doc.get('saved_path'):
             continue  # skip demo seed docs
         events.append({
-            'timestamp':  doc.get('uploaded_at', ''),
+            'timestamp':  str(doc.get('uploaded_at') or ''),
             'source':     'document',
             'actor':      doc.get('bidder_id', '—'),
             'action':     'Document Uploaded',
@@ -95,9 +98,13 @@ def _load_activity_for_tender(tender_id):
         })
 
     # ── 3. Rejection feedback ─────────────────────────────────────
-    for fb in _load('rejection_feedback.json'):
-        if fb.get('tender_id') != tender_id:
-            continue
+    if USE_DATABASE:
+        feedback_entries = db.list_rejection_feedback_db({'tender_id': tender_id})
+    else:
+        feedback_entries = [r for r in load_cached('rejection_feedback.json')
+                            if r.get('tender_id') == tender_id]
+
+    for fb in feedback_entries:
         # Creation event (auto-created on DISQUALIFY)
         events.append({
             'timestamp':  fb.get('created_at', ''),
@@ -129,9 +136,13 @@ def _load_activity_for_tender(tender_id):
             })
 
     # ── 4. Bids ───────────────────────────────────────────────────
-    for bid in _load('bids.json'):
-        if bid.get('tender_id') != tender_id:
-            continue
+    if USE_DATABASE:
+        bid_entries = db.list_bids_db({'tender_id': tender_id})
+    else:
+        bid_entries = [b for b in load_cached('bids.json')
+                       if b.get('tender_id') == tender_id]
+
+    for bid in bid_entries:
         events.append({
             'timestamp': bid.get('submitted_at', ''),
             'source':    'bid',
@@ -159,9 +170,13 @@ def _load_activity_for_tender(tender_id):
             })
 
     # ── 5. Clarifications ─────────────────────────────────────────
-    for clr in _load('clarifications.json'):
-        if clr.get('tender_id') != tender_id:
-            continue
+    if USE_DATABASE:
+        clarification_entries = db.list_clarifications_db({'tender_id': tender_id})
+    else:
+        clarification_entries = [c for c in load_cached('clarifications.json')
+                                  if c.get('tender_id') == tender_id]
+
+    for clr in clarification_entries:
         events.append({
             'timestamp': clr.get('created_at', ''),
             'source':    'clarification',
@@ -683,7 +698,7 @@ def _generate_summary_html(tender, requirements, bidder_summaries, statistics, g
 <body>
 <div class="header">
   <h1>Veritas AI — CONSOLIDATED BIDDER SUMMARY</h1>
-  <p>Evidence-Driven Bid Compliance Intelligence &nbsp;|&nbsp; Team Aevora &nbsp;|&nbsp; SIH 2026 #26100</p>
+  <p>Evidence-Driven Bid Compliance Intelligence</p>
 </div>
 <div class="content">
 
@@ -755,7 +770,7 @@ def _generate_summary_html(tender, requirements, bidder_summaries, statistics, g
   {''.join(observation_blocks)}
 
   <div class="footer">
-    This report was generated by Veritas AI — Team Aevora · SIH 2026 #26100 · Demo Build.<br>
+    This report was generated by Veritas AI.<br>
     AI-assisted compliance verification does not replace final officer review and approval.<br>
     <strong>AI verifies · AI identifies risks · AI recommends · Officer decides.</strong><br>
     Generated: {gen_str}

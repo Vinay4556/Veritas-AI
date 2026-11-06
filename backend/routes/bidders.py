@@ -445,8 +445,8 @@ def get_compliance(bidder_id):
 @require_role('OFFICER')
 def delete_bidder(bidder_id):
     """Permanently remove a bidder — bidder record, uploaded documents (incl.
-    physical files), compliance results, and audit trail references. Useful
-    for removing erroneous or test registrations."""
+    physical files), compliance results. Audit history is PRESERVED (append-only).
+    Useful for removing erroneous or test registrations."""
     from config import DATA_DIR, UPLOAD_DIR
 
     bidders = load_bidders()
@@ -456,43 +456,30 @@ def delete_bidder(bidder_id):
 
     officer = (request.get_json(silent=True) or {}).get('officer', 'Procurement Officer')
 
-    # 1. Remove from bidders.json
-    remaining = [b for b in bidders if b['id'] != bidder_id]
-    save_bidders(remaining)
+    if USE_DATABASE:
+        # ── DB mode ─────────────────────────────────────────────────────
+        # 1. Remove physical upload files
+        bidder_upload_dir = os.path.join(UPLOAD_DIR, bidder_id)
+        if os.path.isdir(bidder_upload_dir):
+            import shutil
+            try:
+                shutil.rmtree(bidder_upload_dir)
+            except Exception as e:
+                print(f"Warning: could not remove upload folder {bidder_upload_dir}: {e}")
 
-    # 2. Remove this bidder's documents (JSON entries + physical files)
-    from services.document_service import load_documents, save_documents
-    docs = load_documents()
-    removed_docs = [d for d in docs if d.get('bidder_id') == bidder_id]
-    kept_docs = [d for d in docs if d.get('bidder_id') != bidder_id]
-    save_documents(kept_docs)
+        # 2. Count documents for response
+        from services.document_service import get_documents_for_bidder as _get_docs
+        removed_docs = _get_docs(bidder_id)
 
-    bidder_upload_dir = os.path.join(UPLOAD_DIR, bidder_id)
-    if os.path.isdir(bidder_upload_dir):
-        import shutil
-        try:
-            shutil.rmtree(bidder_upload_dir)
-        except Exception as e:
-            print(f"Warning: could not remove upload folder {bidder_upload_dir}: {e}")
+        # 3. Delete bidder from DB (documents with FK will cascade if configured,
+        #    otherwise document_service handles physical file removal)
+        db.delete_bidder_db(bidder_id)
 
-    # 3. Remove compliance.json entry
-    try:
-        from services.json_cache import load_cached, save_cached
-        all_compliance = load_cached('compliance.json')
-        if bidder_id in all_compliance:
-            del all_compliance[bidder_id]
-            save_cached('compliance.json', all_compliance)
-    except Exception:
-        pass
+        # 4. Clear compliance results for this bidder
+        db.execute_query('DELETE FROM compliance_results WHERE bidder_id=%s', (bidder_id,))
 
-    # 4. Remove this bidder's prior audit entries, then log the deletion itself
-    try:
-        from services.json_cache import load_cached, save_cached
-        audit = load_cached('audit.json')
-        audit = [a for a in audit if a.get('bidder_id') != bidder_id]
-        audit.append({
-            'id':        next_audit_id(audit),
-            'timestamp': datetime.now().isoformat(),
+        # 5. Append audit entry (INSERT-only, does NOT touch prior audit rows)
+        db.append_audit({
             'actor':     officer,
             'action':    'Bidder Deleted',
             'detail':    (f"{officer} permanently removed bidder {bidder.get('name', bidder_id)} "
@@ -500,10 +487,57 @@ def delete_bidder(bidder_id):
             'tender_id': bidder.get('tender_id'),
             'bidder_id': None,
             'severity':  'warning',
+            'timestamp': datetime.now(),
+            'created_at': datetime.now(),
         })
-        save_cached('audit.json', audit)
-    except Exception:
-        pass
+
+    else:
+        # ── JSON mode ────────────────────────────────────────────────────
+        # 1. Remove from bidders list
+        remaining = [b for b in bidders if b['id'] != bidder_id]
+        save_bidders(remaining)
+
+        # 2. Remove this bidder's documents (JSON entries + physical files)
+        from services.document_service import load_documents, save_documents
+        docs = load_documents()
+        removed_docs = [d for d in docs if d.get('bidder_id') == bidder_id]
+        kept_docs = [d for d in docs if d.get('bidder_id') != bidder_id]
+        save_documents(kept_docs)
+
+        bidder_upload_dir = os.path.join(UPLOAD_DIR, bidder_id)
+        if os.path.isdir(bidder_upload_dir):
+            import shutil
+            try:
+                shutil.rmtree(bidder_upload_dir)
+            except Exception as e:
+                print(f"Warning: could not remove upload folder {bidder_upload_dir}: {e}")
+
+        # 3. Remove compliance.json entry
+        try:
+            all_compliance = load_cached('compliance.json')
+            if bidder_id in all_compliance:
+                del all_compliance[bidder_id]
+                save_cached('compliance.json', all_compliance)
+        except Exception:
+            pass
+
+        # 4. Log the deletion — do NOT filter out prior audit entries (audit is preserved)
+        try:
+            audit = load_cached('audit.json')
+            audit.append({
+                'id':        next_audit_id(audit),
+                'timestamp': datetime.now().isoformat(),
+                'actor':     officer,
+                'action':    'Bidder Deleted',
+                'detail':    (f"{officer} permanently removed bidder {bidder.get('name', bidder_id)} "
+                              f"({bidder_id}) and {len(removed_docs)} associated document(s)."),
+                'tender_id': bidder.get('tender_id'),
+                'bidder_id': None,
+                'severity':  'warning',
+            })
+            save_cached('audit.json', audit)
+        except Exception:
+            pass
 
     return jsonify({
         'success': True,
