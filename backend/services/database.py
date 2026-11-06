@@ -1221,3 +1221,55 @@ def cleanup_expired_revocations() -> int:
     with get_db_cursor() as cursor:
         cursor.execute(query)
         return cursor.rowcount
+
+
+# ── Conflict Declarations ────────────────────────────────────────────────────
+# Table created in Sprint 2 migration (20250719_120000_sprint2_all_entities.py).
+# Columns: id, tender_id, bidder_id, declared_by, declared_at, conflict_type,
+#          description, resolved, resolved_at, created_at.
+# Field mapping from endpoint: officer_id -> declared_by,
+#                               conflict_reason -> description,
+#                               action -> conflict_type.
+
+def create_conflict_declaration_db(data: Dict) -> Optional[Dict]:
+    """Insert a new conflict declaration row. Returns the inserted record."""
+    data = dict(data)
+    data.setdefault('created_at', datetime.now())
+    data.setdefault('declared_at', datetime.now())
+    data.setdefault('resolved', False)
+    # Accept either officer_id or declared_by as the actor field
+    if 'officer_id' in data and 'declared_by' not in data:
+        data['declared_by'] = data.pop('officer_id')
+    # Accept either conflict_reason or description
+    if 'conflict_reason' in data and 'description' not in data:
+        data['description'] = data.pop('conflict_reason')
+    # Accept either action or conflict_type
+    if 'action' in data and 'conflict_type' not in data:
+        data['conflict_type'] = data.pop('action')
+    # Strip fields not present in the DB schema
+    for extra in ('officer_name', 'has_conflict'):
+        data.pop(extra, None)
+    insert_record('conflict_declarations', data, returning='id')
+    return get_conflict_declaration_db(data['id']) if 'id' in data else None
+
+
+def list_conflict_declarations_db(filters: Dict = None) -> List[Dict]:
+    """Return conflict declarations, optionally filtered by tender_id or bidder_id."""
+    if not filters:
+        rows = get_records('conflict_declarations', order_by='declared_at DESC')
+    else:
+        clauses, params = [], []
+        for col in ('tender_id', 'bidder_id', 'declared_by', 'resolved'):
+            if col in filters:
+                clauses.append(f'{col} = %s')
+                params.append(filters[col])
+        where = ' AND '.join(clauses) if clauses else ''
+        rows = get_records('conflict_declarations', where=where,
+                           where_params=tuple(params), order_by='declared_at DESC')
+    return [dict(r) for r in rows]
+
+
+def get_conflict_declaration_db(declaration_id: str) -> Optional[Dict]:
+    """Return a single conflict declaration by primary key."""
+    row = get_record('conflict_declarations', 'id = %s', (declaration_id,))
+    return dict(row) if row else None

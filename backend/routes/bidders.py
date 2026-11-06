@@ -810,6 +810,8 @@ def _load_feedback():
 
 
 def _save_feedback(data):
+    # This helper is only used in JSON mode; DB-mode callers invoke
+    # db.update_rejection_feedback_db() directly.
     if not USE_DATABASE:
         save_cached('rejection_feedback.json', data)
 
@@ -847,21 +849,17 @@ def send_rejection_feedback(fb_id):
         return jsonify({'error': 'Rejection feedback record not found.'}), 404
 
     now = datetime.now().isoformat()
-    for r in records:
-        if r['id'] == fb_id:
-            r['additional_feedback'] = additional_feedback
-            r['feedback_sent_at'] = now
-            r['feedback_sent_by'] = data.get('officer', record.get('officer', 'Procurement Officer'))
-    _save_feedback(records)
+    officer_name = data.get('officer', record.get('officer', 'Procurement Officer'))
 
-    # Append to audit
-    try:
-        from services.json_cache import load_cached, save_cached
-        audit = load_cached('audit.json')
-        audit.append({
-            'id':        next_audit_id(audit),
-            'timestamp': now,
-            'actor':     data.get('officer', 'Procurement Officer'),
+    if USE_DATABASE:
+        updates = {
+            'additional_feedback': additional_feedback,
+            'feedback_sent_at': now,
+            'feedback_sent_by': officer_name,
+        }
+        db.update_rejection_feedback_db(fb_id, updates)
+        db.append_audit({
+            'actor':     officer_name,
             'action':    'Rejection Feedback Sent',
             'detail':    (
                 f'Officer sent rejection feedback to {record.get("bidder_name", record["bidder_id"])} '
@@ -870,10 +868,36 @@ def send_rejection_feedback(fb_id):
             'tender_id': record.get('tender_id'),
             'bidder_id': record.get('bidder_id'),
             'severity':  'info',
+            'timestamp': datetime.now(),
+            'created_at': datetime.now(),
         })
-        save_cached('audit.json', audit)
-    except Exception:
-        pass
+    else:
+        for r in records:
+            if r['id'] == fb_id:
+                r['additional_feedback'] = additional_feedback
+                r['feedback_sent_at'] = now
+                r['feedback_sent_by'] = officer_name
+        _save_feedback(records)
+
+        # Append to audit (JSON mode)
+        try:
+            audit = load_cached('audit.json')
+            audit.append({
+                'id':        next_audit_id(audit),
+                'timestamp': now,
+                'actor':     officer_name,
+                'action':    'Rejection Feedback Sent',
+                'detail':    (
+                    f'Officer sent rejection feedback to {record.get("bidder_name", record["bidder_id"])} '
+                    f'for tender {record.get("tender_id")}.'
+                ),
+                'tender_id': record.get('tender_id'),
+                'bidder_id': record.get('bidder_id'),
+                'severity':  'info',
+            })
+            save_cached('audit.json', audit)
+        except Exception:
+            pass
 
     return jsonify({'status': 'sent', 'id': fb_id, 'feedback_sent_at': now})
 
@@ -894,13 +918,19 @@ def bidder_rejection_feedback():
     # Mark unread records as read
     changed = False
     now = datetime.now().isoformat()
-    for r in records:
-        if r.get('bidder_id') == bidder_id and not r.get('read_by_bidder'):
-            r['read_by_bidder'] = True
-            r['read_at'] = now
-            changed = True
-    if changed:
-        _save_feedback(records)
+    if USE_DATABASE:
+        for r in my_records:
+            if not r.get('read_by_bidder'):
+                db.update_rejection_feedback_db(r['id'], {'read_by_bidder': True, 'read_at': now})
+                changed = True
+    else:
+        for r in records:
+            if r.get('bidder_id') == bidder_id and not r.get('read_by_bidder'):
+                r['read_by_bidder'] = True
+                r['read_at'] = now
+                changed = True
+        if changed:
+            _save_feedback(records)
 
     my_records.sort(key=lambda r: r.get('created_at', ''), reverse=True)
     return jsonify(my_records)

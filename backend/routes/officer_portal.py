@@ -892,55 +892,57 @@ def submit_committee_score(tender_id):
         })
         return jsonify({'status': 'scored', 'score_record': score_record})
 
-    committees = load_json('eval_committees.json')
-    committee = next((c for c in committees if c.get('tender_id') == tender_id), None)
-    if not committee:
-        return jsonify({'error': 'No committee found for this tender'}), 404
+    # JSON-mode fallback — guarded so it cannot fire when USE_DATABASE is True
+    if not USE_DATABASE:
+        committees = load_json('eval_committees.json')
+        committee = next((c for c in committees if c.get('tender_id') == tender_id), None)
+        if not committee:
+            return jsonify({'error': 'No committee found for this tender'}), 404
 
-    for c in committees:
-        if c['tender_id'] == tender_id:
-            # Remove existing score by same evaluator for same bid (replace only — once submitted, truly immutable in prod)
-            c['scores'] = [s for s in c.get('scores', [])
-                           if not (s['bid_id'] == bid_id and s['evaluator_id'] == evaluator_id)]
-            c['scores'].append(score_record)
+        for c in committees:
+            if c['tender_id'] == tender_id:
+                # Remove existing score by same evaluator for same bid (replace only — once submitted, truly immutable in prod)
+                c['scores'] = [s for s in c.get('scores', [])
+                               if not (s['bid_id'] == bid_id and s['evaluator_id'] == evaluator_id)]
+                c['scores'].append(score_record)
 
-            # Compute aggregate
-            bid_scores = [s['score'] for s in c['scores'] if s['bid_id'] == bid_id]
-            method = c.get('aggregate_method', 'AVERAGE')
-            if bid_scores:
-                if method == 'AVERAGE':
-                    aggregate = round(sum(bid_scores) / len(bid_scores), 1)
-                elif method == 'MIN':
-                    aggregate = min(bid_scores)
-                elif method == 'MAX':
-                    aggregate = max(bid_scores)
-                else:
-                    aggregate = round(sum(bid_scores) / len(bid_scores), 1)
-                score_record['aggregate'] = aggregate
+                # Compute aggregate
+                bid_scores = [s['score'] for s in c['scores'] if s['bid_id'] == bid_id]
+                method = c.get('aggregate_method', 'AVERAGE')
+                if bid_scores:
+                    if method == 'AVERAGE':
+                        aggregate = round(sum(bid_scores) / len(bid_scores), 1)
+                    elif method == 'MIN':
+                        aggregate = min(bid_scores)
+                    elif method == 'MAX':
+                        aggregate = max(bid_scores)
+                    else:
+                        aggregate = round(sum(bid_scores) / len(bid_scores), 1)
+                    score_record['aggregate'] = aggregate
 
-                # Update bid's technical_score
-                bids = load_json('bids.json')
-                for b in bids:
-                    if b['id'] == bid_id:
-                        b['technical_score'] = aggregate
-                        b['committee_scores'] = bid_scores
-                        b['committee_evaluators'] = len(bid_scores)
-                save_json('bids.json', bids)
+                    # Update bid's technical_score
+                    bids = load_json('bids.json')
+                    for b in bids:
+                        if b['id'] == bid_id:
+                            b['technical_score'] = aggregate
+                            b['committee_scores'] = bid_scores
+                            b['committee_evaluators'] = len(bid_scores)
+                    save_json('bids.json', bids)
 
-    save_json('eval_committees.json', committees)
+        save_json('eval_committees.json', committees)
 
-    audit = load_json('audit.json')
-    audit.append({
-        'id': next_audit_id(audit),
-        'timestamp': datetime.now().isoformat(),
-        'actor': data.get('evaluator_name', evaluator_id),
-        'action': 'TECHNICAL_SCORE_SUBMITTED',
-        'detail': f'Score {score}/100 submitted for bid {bid_id} by {evaluator_id}.',
-        'tender_id': tender_id,
-        'bidder_id': data.get('bidder_id'),
-        'severity': 'info',
-    })
-    save_json('audit.json', audit)
+        audit = load_json('audit.json')
+        audit.append({
+            'id': next_audit_id(audit),
+            'timestamp': datetime.now().isoformat(),
+            'actor': data.get('evaluator_name', evaluator_id),
+            'action': 'TECHNICAL_SCORE_SUBMITTED',
+            'detail': f'Score {score}/100 submitted for bid {bid_id} by {evaluator_id}.',
+            'tender_id': tender_id,
+            'bidder_id': data.get('bidder_id'),
+            'severity': 'info',
+        })
+        save_json('audit.json', audit)
 
     return jsonify({'status': 'scored', 'score_record': score_record})
 
@@ -1140,13 +1142,7 @@ def vendor_integrity(bidder_id):
 @officer_portal_bp.route('/api/tenders/<tender_id>/conflict-declaration', methods=['POST'])
 @require_role('OFFICER')
 def conflict_declaration(tender_id):
-    """Officer or evaluator declares/denies conflict of interest for a tender.
-
-    NOTE: This endpoint intentionally uses JSON storage only in both modes.
-    The Sprint 2 migration did not create a conflict_declarations table.
-    Conflict declarations are a low-volume officer action with no critical
-    persistence requirement. A new migration would be needed to add DB support.
-    """
+    """Officer or evaluator declares/denies conflict of interest for a tender."""
     data = request.get_json() or {}
     session = get_session(request)
     actor_id = (session or {}).get('id', data.get('officer_id', 'USR-001'))
@@ -1161,24 +1157,45 @@ def conflict_declaration(tender_id):
         'declared_at': datetime.now().isoformat(),
     }
 
-    # Persist
-    declarations = load_json('conflict_declarations.json')
-    declarations.append(declaration)
-    save_json('conflict_declarations.json', declarations)
-
     severity = 'warning' if data.get('has_conflict') else 'info'
-    audit = load_json('audit.json')
-    audit.append({
-        'id': next_audit_id(audit),
-        'timestamp': datetime.now().isoformat(),
-        'actor': data.get('officer_name', actor_id),
-        'action': 'CONFLICT_DECLARATION',
-        'detail': f'Conflict declaration for tender {tender_id}: has_conflict={data.get("has_conflict")}',
-        'tender_id': tender_id,
-        'bidder_id': None,
-        'severity': severity,
-    })
-    save_json('audit.json', audit)
+
+    if USE_DATABASE:
+        db_record = {
+            'tender_id':    tender_id,
+            'declared_by':  actor_id,
+            'conflict_type': data.get('action', 'NONE'),
+            'description':  data.get('conflict_reason', ''),
+            'resolved':     False,
+        }
+        db.create_conflict_declaration_db(db_record)
+        db.append_audit({
+            'actor':      data.get('officer_name', actor_id),
+            'action':     'CONFLICT_DECLARATION',
+            'detail':     f'Conflict declaration for tender {tender_id}: has_conflict={data.get("has_conflict")}',
+            'tender_id':  tender_id,
+            'bidder_id':  None,
+            'severity':   severity,
+            'timestamp':  datetime.now(),
+            'created_at': datetime.now(),
+        })
+    else:
+        # Persist
+        declarations = load_json('conflict_declarations.json')
+        declarations.append(declaration)
+        save_json('conflict_declarations.json', declarations)
+
+        audit = load_json('audit.json')
+        audit.append({
+            'id': next_audit_id(audit),
+            'timestamp': datetime.now().isoformat(),
+            'actor': data.get('officer_name', actor_id),
+            'action': 'CONFLICT_DECLARATION',
+            'detail': f'Conflict declaration for tender {tender_id}: has_conflict={data.get("has_conflict")}',
+            'tender_id': tender_id,
+            'bidder_id': None,
+            'severity': severity,
+        })
+        save_json('audit.json', audit)
 
     return jsonify({'status': 'declared', 'declaration': declaration}), 201
 
