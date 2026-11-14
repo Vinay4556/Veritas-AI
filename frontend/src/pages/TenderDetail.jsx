@@ -15,33 +15,117 @@ import api from '../services/api.js'
 
 // ── Classification short labels ──────────────────────────────
 const SHORT_LABELS = {
-  CIVIL_WORKS:              'Civil Works',
-  ELECTRICAL_POWER:         'Electrical',
-  MECHANICAL_INDUSTRIAL:    'Mechanical',
-  IT_SOFTWARE:              'IT & Software',
-  GOODS_SUPPLY:             'Goods',
-  HEALTHCARE_MEDICAL:       'Healthcare',
-  TRANSPORT_LOGISTICS:      'Transport',
-  WATER_SANITATION:         'Water',
-  CONSULTANCY:              'Consultancy',
-  MAINTENANCE_REPAIR:       'Maintenance',
-  SECURITY:                 'Security',
-  OTHER:                    'Other',
+  // Furniture
+  STEEL_FURNITURE:        'Steel Furniture',
+  WOODEN_FURNITURE:       'Wooden Furniture',
+  OFFICE_FURNITURE:       'Office Furniture',
+  SCHOOL_FURNITURE:       'School Furniture',
+  HOSPITAL_FURNITURE:     'Hospital Furniture',
+  // Roads & Civil
+  ROAD_CONSTRUCTION:      'Road Construction',
+  ROAD_REPAIR:            'Road Repair',
+  BRIDGE_CONSTRUCTION:    'Bridge Construction',
+  BUILDING_CONSTRUCTION:  'Building Construction',
+  BUILDING_RENOVATION:    'Building Renovation',
+  DRAINAGE_WORK:          'Drainage Work',
+  // IT & Technology
+  COMPUTER_SUPPLY:        'Computer Supply',
+  NETWORKING_EQUIPMENT:   'Networking',
+  CCTV_INSTALLATION:      'CCTV',
+  SOFTWARE_DEVELOPMENT:   'Software Dev',
+  IT_INFRASTRUCTURE:      'IT Infrastructure',
+  CYBERSECURITY:          'Cybersecurity',
+  // Electrical & Energy
+  ELECTRICAL_EQUIPMENT:   'Electrical Equip.',
+  ELECTRICAL_INSTALLATION:'Elec. Installation',
+  ELECTRICAL_MAINTENANCE: 'Elec. Maintenance',
+  SOLAR_INSTALLATION:     'Solar',
+  STREET_LIGHTING:        'Street Lighting',
+  TRANSFORMER_SUPPLY:     'Transformer',
+  // Healthcare
+  MEDICAL_EQUIPMENT:      'Medical Equip.',
+  LABORATORY_EQUIPMENT:   'Lab Equipment',
+  MEDICINE_SUPPLY:        'Medicine Supply',
+  MEDICAL_CONSUMABLES:    'Med. Consumables',
+  // Water & Sanitation
+  WATER_PIPELINE:         'Water Pipeline',
+  WATER_TANK:             'Water Tank',
+  WATER_TREATMENT:        'Water Treatment',
+  SEWAGE_WORK:            'Sewage Work',
+  SANITATION_SERVICES:    'Sanitation',
+  // Transportation
+  VEHICLE_SUPPLY:         'Vehicle Supply',
+  VEHICLE_MAINTENANCE:    'Vehicle Maint.',
+  TRANSPORT_SERVICES:     'Transport',
+  // Industrial Equipment
+  INDUSTRIAL_IOT:         'Industrial IoT',
+  INDUSTRIAL_MACHINERY:   'Ind. Machinery',
+  SAFETY_EQUIPMENT:       'Safety Equip.',
+  // General Supplies
+  OFFICE_SUPPLIES:        'Office Supplies',
+  SECURITY_SERVICES:      'Security',
+  HOUSEKEEPING:           'Housekeeping',
+  CONSULTANCY:            'Consultancy',
+  TRAINING:               'Training',
+  // Other
+  OTHER:                  'Other',
 }
 
 const CLASSIFICATION_COLORS = {
-  CIVIL_WORKS:           'bg-orange-50 text-orange-700',
-  ELECTRICAL_POWER:      'bg-yellow-50 text-yellow-700',
-  MECHANICAL_INDUSTRIAL: 'bg-cyan-50 text-cyan-700',
-  IT_SOFTWARE:           'bg-purple-50 text-purple-700',
-  GOODS_SUPPLY:          'bg-green-50 text-green-700',
-  HEALTHCARE_MEDICAL:    'bg-red-50 text-red-700',
-  TRANSPORT_LOGISTICS:   'bg-blue-50 text-blue-700',
-  WATER_SANITATION:      'bg-teal-50 text-teal-700',
-  CONSULTANCY:           'bg-indigo-50 text-indigo-700',
-  MAINTENANCE_REPAIR:    'bg-gray-50 text-gray-700',
-  SECURITY:              'bg-rose-50 text-rose-700',
-  OTHER:                 'bg-slate-50 text-slate-700',
+  // Furniture — amber
+  STEEL_FURNITURE:        'bg-amber-50 text-amber-700',
+  WOODEN_FURNITURE:       'bg-amber-50 text-amber-700',
+  OFFICE_FURNITURE:       'bg-amber-50 text-amber-700',
+  SCHOOL_FURNITURE:       'bg-amber-50 text-amber-700',
+  HOSPITAL_FURNITURE:     'bg-amber-50 text-amber-700',
+  // Roads & Civil — orange
+  ROAD_CONSTRUCTION:      'bg-orange-50 text-orange-700',
+  ROAD_REPAIR:            'bg-orange-50 text-orange-700',
+  BRIDGE_CONSTRUCTION:    'bg-orange-50 text-orange-700',
+  BUILDING_CONSTRUCTION:  'bg-orange-50 text-orange-700',
+  BUILDING_RENOVATION:    'bg-orange-50 text-orange-700',
+  DRAINAGE_WORK:          'bg-orange-50 text-orange-700',
+  // IT & Technology — purple
+  COMPUTER_SUPPLY:        'bg-purple-50 text-purple-700',
+  NETWORKING_EQUIPMENT:   'bg-purple-50 text-purple-700',
+  CCTV_INSTALLATION:      'bg-purple-50 text-purple-700',
+  SOFTWARE_DEVELOPMENT:   'bg-purple-50 text-purple-700',
+  IT_INFRASTRUCTURE:      'bg-purple-50 text-purple-700',
+  CYBERSECURITY:          'bg-purple-50 text-purple-700',
+  // Electrical & Energy — yellow
+  ELECTRICAL_EQUIPMENT:   'bg-yellow-50 text-yellow-700',
+  ELECTRICAL_INSTALLATION:'bg-yellow-50 text-yellow-700',
+  ELECTRICAL_MAINTENANCE: 'bg-yellow-50 text-yellow-700',
+  SOLAR_INSTALLATION:     'bg-yellow-50 text-yellow-700',
+  STREET_LIGHTING:        'bg-yellow-50 text-yellow-700',
+  TRANSFORMER_SUPPLY:     'bg-yellow-50 text-yellow-700',
+  // Healthcare — red
+  MEDICAL_EQUIPMENT:      'bg-red-50 text-red-700',
+  LABORATORY_EQUIPMENT:   'bg-red-50 text-red-700',
+  MEDICINE_SUPPLY:        'bg-red-50 text-red-700',
+  MEDICAL_CONSUMABLES:    'bg-red-50 text-red-700',
+  // Water & Sanitation — teal
+  WATER_PIPELINE:         'bg-teal-50 text-teal-700',
+  WATER_TANK:             'bg-teal-50 text-teal-700',
+  WATER_TREATMENT:        'bg-teal-50 text-teal-700',
+  SEWAGE_WORK:            'bg-teal-50 text-teal-700',
+  SANITATION_SERVICES:    'bg-teal-50 text-teal-700',
+  // Transportation — blue
+  VEHICLE_SUPPLY:         'bg-blue-50 text-blue-700',
+  VEHICLE_MAINTENANCE:    'bg-blue-50 text-blue-700',
+  TRANSPORT_SERVICES:     'bg-blue-50 text-blue-700',
+  // Industrial Equipment — cyan
+  INDUSTRIAL_IOT:         'bg-cyan-50 text-cyan-700',
+  INDUSTRIAL_MACHINERY:   'bg-cyan-50 text-cyan-700',
+  SAFETY_EQUIPMENT:       'bg-cyan-50 text-cyan-700',
+  // General Supplies — green / indigo / gray
+  OFFICE_SUPPLIES:        'bg-green-50 text-green-700',
+  SECURITY_SERVICES:      'bg-rose-50 text-rose-700',
+  HOUSEKEEPING:           'bg-green-50 text-green-700',
+  CONSULTANCY:            'bg-indigo-50 text-indigo-700',
+  TRAINING:               'bg-indigo-50 text-indigo-700',
+  // Other
+  OTHER:                  'bg-slate-50 text-slate-700',
 }
 
 export default function TenderDetail() {
@@ -186,7 +270,7 @@ export default function TenderDetail() {
                   style={{ borderRadius: '2px' }}
                   title={tender.classification_reason || tender.classification}
                 >
-                  {SHORT_LABELS[tender.classification] || tender.classification}
+                  {SHORT_LABELS[tender.classification] || tender.classification_name || tender.classification}
                 </span>
               )}
               {tender.procurement_type && (
