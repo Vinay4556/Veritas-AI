@@ -5,38 +5,6 @@ import { getTenders, getTendersFiltered, getClassifications } from '../services/
 import { PageLoader } from '../components/LoadingSkeleton.jsx'
 import { useLanguage } from '../context/LanguageContext.jsx'
 
-// ── Classification short labels ──────────────────────────────
-const SHORT_LABELS = {
-  CIVIL_WORKS:              'Civil Works',
-  ELECTRICAL_POWER:         'Electrical',
-  MECHANICAL_INDUSTRIAL:    'Mechanical',
-  IT_SOFTWARE:              'IT & Software',
-  GOODS_SUPPLY:             'Goods',
-  HEALTHCARE_MEDICAL:       'Healthcare',
-  TRANSPORT_LOGISTICS:      'Transport',
-  WATER_SANITATION:         'Water',
-  CONSULTANCY:              'Consultancy',
-  MAINTENANCE_REPAIR:       'Maintenance',
-  SECURITY:                 'Security',
-  OTHER:                    'Other',
-}
-
-// ── Classification badge colors ──────────────────────────────
-const CLASSIFICATION_COLORS = {
-  CIVIL_WORKS:           'bg-orange-50 text-orange-700',
-  ELECTRICAL_POWER:      'bg-yellow-50 text-yellow-700',
-  MECHANICAL_INDUSTRIAL: 'bg-cyan-50 text-cyan-700',
-  IT_SOFTWARE:           'bg-purple-50 text-purple-700',
-  GOODS_SUPPLY:          'bg-green-50 text-green-700',
-  HEALTHCARE_MEDICAL:    'bg-red-50 text-red-700',
-  TRANSPORT_LOGISTICS:   'bg-blue-50 text-blue-700',
-  WATER_SANITATION:      'bg-teal-50 text-teal-700',
-  CONSULTANCY:           'bg-indigo-50 text-indigo-700',
-  MAINTENANCE_REPAIR:    'bg-gray-50 text-gray-700',
-  SECURITY:              'bg-rose-50 text-rose-700',
-  OTHER:                 'bg-slate-50 text-slate-700',
-}
-
 const STATUS_OPTIONS = ['Active', 'Closed', 'Evaluation', 'Awarded']
 
 export default function Tenders() {
@@ -45,29 +13,26 @@ export default function Tenders() {
   const [classificationFilter, setClassificationFilter] = useState('')
   const [statusFilter, setStatusFilter] = useState('')
   const [searchQuery, setSearchQuery] = useState('')
-  const [classificationCounts, setClassificationCounts] = useState({})
-  const [classifications, setClassifications] = useState({})
+  // classificationList: [{key, label, count}, ...]
+  const [classificationList, setClassificationList] = useState([])
 
   const navigate = useNavigate()
   const { t } = useLanguage()
 
-  // Load classification counts + labels once on mount
+  // Load classification list once on mount
   useEffect(() => {
     getClassifications()
       .then((res) => {
         const data = res.data || {}
-        // Backend may return { counts: {}, labels: {} } or just a flat counts object
-        if (data.counts) {
-          setClassificationCounts(data.counts)
-          setClassifications(data.labels || {})
+        // New API returns: { classifications: [{key, label, count}, ...], total: N }
+        if (Array.isArray(data.classifications)) {
+          setClassificationList(data.classifications)
         } else {
-          // Flat counts map
-          setClassificationCounts(data)
+          setClassificationList([])
         }
       })
       .catch(() => {
-        // Not critical — filters still work, just no counts
-        setClassificationCounts({})
+        setClassificationList([])
       })
   }, [])
 
@@ -92,11 +57,6 @@ export default function Tenders() {
   useEffect(() => {
     loadTenders()
   }, [loadTenders])
-
-  // ── Classification pills — only show keys with count > 0 (or all keys if no counts)
-  const classificationKeys = Object.keys(SHORT_LABELS).filter(
-    (k) => !Object.keys(classificationCounts).length || (classificationCounts[k] || 0) > 0
-  )
 
   if (loading && !tenders.length) return <PageLoader />
 
@@ -125,7 +85,7 @@ export default function Tenders() {
         />
       </div>
 
-      {/* Classification filter pills */}
+      {/* Classification filter pills — data-driven from API */}
       <div className="overflow-x-auto">
         <div className="flex items-center gap-2 pb-1 min-w-max">
           <button
@@ -139,13 +99,12 @@ export default function Tenders() {
           >
             All
           </button>
-          {classificationKeys.map((key) => {
-            const count = classificationCounts[key] || 0
-            const isActive = classificationFilter === key
+          {classificationList.map((item) => {
+            const isActive = classificationFilter === item.key
             return (
               <button
-                key={key}
-                onClick={() => setClassificationFilter(isActive ? '' : key)}
+                key={item.key}
+                onClick={() => setClassificationFilter(isActive ? '' : item.key)}
                 className={`px-3 py-1.5 text-xs font-semibold transition-colors flex items-center gap-1.5 flex-shrink-0 ${
                   isActive
                     ? 'bg-blue-600 text-white border border-blue-600'
@@ -153,14 +112,14 @@ export default function Tenders() {
                 }`}
                 style={{ borderRadius: '2px' }}
               >
-                {SHORT_LABELS[key]}
-                {count > 0 && (
+                {item.label}
+                {item.count > 0 && (
                   <span
                     className={`inline-flex items-center justify-center w-4 h-4 text-[10px] font-bold rounded-full ${
                       isActive ? 'bg-white text-blue-600' : 'bg-gray-100 text-gray-600'
                     }`}
                   >
-                    {count}
+                    {item.count}
                   </span>
                 )}
               </button>
@@ -210,9 +169,11 @@ export default function Tenders() {
             <div className="text-sm text-gray-500 py-8 text-center">No tenders match the selected filters.</div>
           )}
           {tenders.map((tender) => {
-            const cls = tender.classification
-            const clsColor = cls ? (CLASSIFICATION_COLORS[cls] || 'bg-slate-50 text-slate-700') : null
-            const clsLabel = cls ? (SHORT_LABELS[cls] || cls) : null
+            // Look up label from classificationList, fall back to classification_name or raw key
+            const clsEntry = classificationList.find((c) => c.key === tender.classification)
+            const clsLabel = clsEntry
+              ? clsEntry.label
+              : tender.classification_name || tender.classification || null
 
             return (
               <div
@@ -233,7 +194,7 @@ export default function Tenders() {
                       </span>
                       {clsLabel && (
                         <span
-                          className={`text-xs px-2 py-0.5 font-medium ${clsColor}`}
+                          className="text-xs px-2 py-0.5 font-medium bg-blue-50 text-blue-700"
                           style={{ borderRadius: '2px' }}
                         >
                           {clsLabel}

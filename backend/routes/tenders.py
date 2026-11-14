@@ -152,15 +152,30 @@ def get_requirements(tender_id):
 # ── Classification Lookup ─────────────────────────────────────
 @tenders_bp.route('/api/tenders/classifications', methods=['GET'])
 def get_classifications():
-    """Returns the classification labels and count per classification from JSON data."""
+    """Returns subject-based classification keys, labels and counts.
+    Only returns classifications that have at least 1 tender.
+    Response format:
+    {
+      "classifications": [
+        {"key": "INDUSTRIAL_IOT", "label": "Industrial IoT & Monitoring Equipment", "count": 1},
+        ...
+      ],
+      "total": 16
+    }
+    """
     tenders = load_json('tenders.json')
-    counts = {label: 0 for label in CLASSIFICATION_LABELS.values()}
+    counts = {}
     for t in tenders:
         c = t.get('classification')
-        if c and c in CLASSIFICATION_LABELS:
-            label = CLASSIFICATION_LABELS[c]
-            counts[label] = counts.get(label, 0) + 1
-    return jsonify({'classifications': CLASSIFICATION_LABELS, 'counts': counts})
+        if c:
+            counts[c] = counts.get(c, 0) + 1
+    result = []
+    for key, label in CLASSIFICATION_LABELS.items():
+        count = counts.get(key, 0)
+        if count > 0:
+            result.append({'key': key, 'label': label, 'count': count})
+    result.sort(key=lambda x: x['count'], reverse=True)
+    return jsonify({'classifications': result, 'total': len(tenders)})
 
 
 @tenders_bp.route('/api/tenders/<tender_id>/classify', methods=['POST'])
