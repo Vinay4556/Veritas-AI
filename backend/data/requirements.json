@@ -290,5 +290,1602 @@
     "verification_type": "document_presence",
     "threshold": null,
     "unit": null
+  },
+  {
+    "id": "REQ-CPWD01-001",
+    "tender_id": "TND-CPWD-2026-001",
+    "title": "GST Registration",
+    "category": "Legal",
+    "mandatory": true,
+    "description": "Bidder must hold a valid GST Registration Certificate (GSTIN) issued by the Government of India. This is a mandatory legal requirement for all government procurement contracts to ensure tax compliance.",
+    "required_evidence": [
+      "GST Certificate"
+    ],
+    "verification_type": "document_presence",
+    "threshold": null,
+    "unit": null
+  },
+  {
+    "id": "REQ-CPWD01-002",
+    "tender_id": "TND-CPWD-2026-001",
+    "title": "PAN Card",
+    "category": "Legal",
+    "mandatory": true,
+    "description": "Bidder must possess a valid Permanent Account Number (PAN) issued by the Income Tax Department of India. PAN is mandatory for all financial transactions above prescribed limits and for income tax compliance.",
+    "required_evidence": [
+      "PAN Card"
+    ],
+    "verification_type": "document_presence",
+    "threshold": null,
+    "unit": null
+  },
+  {
+    "id": "REQ-CPWD01-003",
+    "tender_id": "TND-CPWD-2026-001",
+    "title": "Minimum Turnover ₹50 Lakh",
+    "category": "Financial",
+    "mandatory": true,
+    "description": "Bidder must demonstrate a minimum average annual turnover of ₹50 Lakh over the last three financial years to establish financial capacity for executing the contract. Audited financial statements certified by a Chartered Accountant are required.",
+    "required_evidence": [
+      "Audited Financial Statements",
+      "CA Certificate"
+    ],
+    "verification_type": "numeric_threshold",
+    "threshold": 5000000,
+    "threshold_display": "₹50 Lakh",
+    "unit": "INR"
+  },
+  {
+    "id": "REQ-CPWD01-004",
+    "tender_id": "TND-CPWD-2026-001",
+    "title": "Government/PSU Supply Experience",
+    "category": "Technical",
+    "mandatory": true,
+    "description": "Bidder must have a minimum of 3 years of experience in supply of furniture or similar goods to Government offices, PSUs or public sector institutions. Experience must be evidenced by work orders and completion certificates from the respective organizations.",
+    "required_evidence": [
+      "Work Orders",
+      "Completion Certificates"
+    ],
+    "verification_type": "experience_years",
+    "threshold": 3,
+    "unit": "years"
+  },
+  {
+    "id": "REQ-CPWD01-005",
+    "tender_id": "TND-CPWD-2026-001",
+    "title": "BIS/ISI Mark Certificate",
+    "category": "Certifications",
+    "mandatory": true,
+    "description": "All steel furniture items supplied must conform to BIS/ISI standards and carry valid BIS or ISI Mark certification. This ensures the furniture meets quality, safety and durability standards prescribed by the Bureau of Indian Standards.",
+    "required_evidence": [
+      "BIS Certificate",
+      "ISI Mark Certificate"
+    ],
+    "verification_type": "certificate_validity",
+    "threshold": null,
+    "unit": null
+  },
+  {
+    "id": "REQ-CPWD01-006",
+    "tender_id": "TND-CPWD-2026-001",
+    "title": "MSME/Udyam Registration",
+    "category": "Legal",
+    "mandatory": false,
+    "description": "Bidders registered under the Udyam Registration scheme as Micro, Small or Medium Enterprises are eligible for purchase preference as per MSME procurement policy. Submission of valid Udyam Certificate is required to claim these benefits.",
+    "required_evidence": [
+      "Udyam Certificate"
+    ],
+    "verification_type": "document_presence",
+    "threshold": null,
+    "unit": null
+  },
+  {
+    "id": "REQ-CPWD01-007",
+    "tender_id": "TND-CPWD-2026-001",
+    "title": "Quality Inspection Acceptance Protocol",
+    "category": "Technical",
+    "mandatory": false,
+    "description": "Bidder should have a documented quality inspection and acceptance protocol for steel furniture manufacturing. Submission of a quality inspection procedure document and a sample inspection report demonstrates commitment to consistent product quality.",
+    "required_evidence": [
+      "Quality Inspection Procedure",
+      "Sample Inspection Report"
+    ],
+    "verification_type": "document_presence",
+    "threshold": null,
+    "unit": null
+  },
+  {
+    "id": "REQ-NHAI01-001",
+    "tender_id": "TND-NHAI-2026-001",
+    "title": "GST Registration",
+    "category": "Legal",
+    "mandatory": true,
+    "description": "Bidder must hold a valid GST Registration Certificate (GSTIN) issued by the Government of India. This is a mandatory legal requirement for all government procurement contracts to ensure tax compliance.",
+    "required_evidence": [
+      "GST Certificate"
+    ],
+    "verification_type": "document_presence",
+    "threshold": null,
+    "unit": null
+  },
+  {
+    "id": "REQ-NHAI01-002",
+    "tender_id": "TND-NHAI-2026-001",
+    "title": "PAN Card",
+    "category": "Legal",
+    "mandatory": true,
+    "description": "Bidder must possess a valid Permanent Account Number (PAN) issued by the Income Tax Department of India. PAN is mandatory for all financial transactions and income tax compliance.",
+    "required_evidence": [
+      "PAN Card"
+    ],
+    "verification_type": "document_presence",
+    "threshold": null,
+    "unit": null
+  },
+  {
+    "id": "REQ-NHAI01-003",
+    "tender_id": "TND-NHAI-2026-001",
+    "title": "Contractor License Class A",
+    "category": "Legal",
+    "mandatory": true,
+    "description": "Bidder must hold a valid Class A Contractor License registered with NHAI or Central/State PWD for undertaking large-scale highway construction works. The license must be valid at the time of bid submission and throughout the contract period.",
+    "required_evidence": [
+      "Contractor License",
+      "Registration Certificate"
+    ],
+    "verification_type": "document_presence",
+    "threshold": null,
+    "unit": null
+  },
+  {
+    "id": "REQ-NHAI01-004",
+    "tender_id": "TND-NHAI-2026-001",
+    "title": "Minimum Turnover ₹2 Crore",
+    "category": "Financial",
+    "mandatory": true,
+    "description": "Bidder must demonstrate a minimum average annual turnover of ₹2 Crore over the last three financial years to establish financial capacity for the highway construction contract. Audited financial statements certified by a Chartered Accountant are required.",
+    "required_evidence": [
+      "Audited Financial Statements",
+      "CA Certificate"
+    ],
+    "verification_type": "numeric_threshold",
+    "threshold": 20000000,
+    "threshold_display": "₹2 Crore",
+    "unit": "INR"
+  },
+  {
+    "id": "REQ-NHAI01-005",
+    "tender_id": "TND-NHAI-2026-001",
+    "title": "Completed Road Works Experience ₹50 Lakh+",
+    "category": "Technical",
+    "mandatory": true,
+    "description": "Bidder must have successfully completed at least one road construction project of value ₹50 Lakh or above in the preceding five years. Work orders, completion certificates and client certificates must be submitted as proof of similar work experience.",
+    "required_evidence": [
+      "Work Orders",
+      "Completion Certificates",
+      "Client Certificates"
+    ],
+    "verification_type": "project_count",
+    "threshold": 1,
+    "unit": "projects"
+  },
+  {
+    "id": "REQ-NHAI01-006",
+    "tender_id": "TND-NHAI-2026-001",
+    "title": "Bitumen and Material Quality Certificate",
+    "category": "Technical",
+    "mandatory": true,
+    "description": "Bidder must submit material quality test reports confirming that bitumen and other construction materials meet IRC and BIS specifications. Source certificates for bitumen supply must also be provided to ensure traceability.",
+    "required_evidence": [
+      "Material Quality Test Reports",
+      "Bitumen Source Certificate"
+    ],
+    "verification_type": "document_presence",
+    "threshold": null,
+    "unit": null
+  },
+  {
+    "id": "REQ-NHAI01-007",
+    "tender_id": "TND-NHAI-2026-001",
+    "title": "Equipment Availability Declaration",
+    "category": "Technical",
+    "mandatory": true,
+    "description": "Bidder must provide a comprehensive list of road construction equipment including paving machines, rollers and mixing plants proposed for deployment, along with proof of ownership or lease agreements. This confirms the technical capacity to execute the highway contract.",
+    "required_evidence": [
+      "Equipment List",
+      "Ownership/Lease Proof"
+    ],
+    "verification_type": "document_presence",
+    "threshold": null,
+    "unit": null
+  },
+  {
+    "id": "REQ-NHAI01-008",
+    "tender_id": "TND-NHAI-2026-001",
+    "title": "EPFO Registration",
+    "category": "Legal",
+    "mandatory": false,
+    "description": "Bidder should be registered with the Employees' Provident Fund Organisation (EPFO) as required under the EPF and Miscellaneous Provisions Act, 1952 for businesses employing 20 or more persons. Valid EPFO registration ensures compliance with labour welfare obligations.",
+    "required_evidence": [
+      "EPFO Registration Certificate"
+    ],
+    "verification_type": "document_presence",
+    "threshold": null,
+    "unit": null
+  },
+  {
+    "id": "REQ-NHAI01-009",
+    "tender_id": "TND-NHAI-2026-001",
+    "title": "ESIC Registration",
+    "category": "Legal",
+    "mandatory": false,
+    "description": "Bidder should be registered with the Employees' State Insurance Corporation (ESIC) under the ESI Act, 1948 to provide medical and cash benefits to workers. Valid ESIC registration demonstrates compliance with employee welfare statutory requirements.",
+    "required_evidence": [
+      "ESIC Registration Certificate"
+    ],
+    "verification_type": "document_presence",
+    "threshold": null,
+    "unit": null
+  },
+  {
+    "id": "REQ-PWD01-001",
+    "tender_id": "TND-PWD-2026-001",
+    "title": "GST Registration",
+    "category": "Legal",
+    "mandatory": true,
+    "description": "Bidder must hold a valid GST Registration Certificate (GSTIN) issued by the Government of India. This is a mandatory legal requirement for all government procurement contracts to ensure tax compliance.",
+    "required_evidence": [
+      "GST Certificate"
+    ],
+    "verification_type": "document_presence",
+    "threshold": null,
+    "unit": null
+  },
+  {
+    "id": "REQ-PWD01-002",
+    "tender_id": "TND-PWD-2026-001",
+    "title": "PAN Card",
+    "category": "Legal",
+    "mandatory": true,
+    "description": "Bidder must possess a valid Permanent Account Number (PAN) issued by the Income Tax Department of India. PAN is mandatory for all financial transactions and income tax compliance.",
+    "required_evidence": [
+      "PAN Card"
+    ],
+    "verification_type": "document_presence",
+    "threshold": null,
+    "unit": null
+  },
+  {
+    "id": "REQ-PWD01-003",
+    "tender_id": "TND-PWD-2026-001",
+    "title": "Contractor License Class B or above",
+    "category": "Legal",
+    "mandatory": true,
+    "description": "Bidder must hold a valid Contractor License of Class B or above registered with the Maharashtra PWD or equivalent State/Central authority. This license is mandatory for undertaking road repair and resurfacing works on state highways.",
+    "required_evidence": [
+      "Contractor License"
+    ],
+    "verification_type": "document_presence",
+    "threshold": null,
+    "unit": null
+  },
+  {
+    "id": "REQ-PWD01-004",
+    "tender_id": "TND-PWD-2026-001",
+    "title": "Minimum Turnover ₹2 Crore",
+    "category": "Financial",
+    "mandatory": true,
+    "description": "Bidder must demonstrate a minimum average annual turnover of ₹2 Crore over the last three financial years to establish financial capacity for the road repair contract. Audited financial statements certified by a Chartered Accountant are required.",
+    "required_evidence": [
+      "Audited Financial Statements",
+      "CA Certificate"
+    ],
+    "verification_type": "numeric_threshold",
+    "threshold": 20000000,
+    "threshold_display": "₹2 Crore",
+    "unit": "INR"
+  },
+  {
+    "id": "REQ-PWD01-005",
+    "tender_id": "TND-PWD-2026-001",
+    "title": "Bituminous Road Repair Experience",
+    "category": "Technical",
+    "mandatory": true,
+    "description": "Bidder must have a minimum of 3 years of experience in bituminous road repair, resurfacing and overlay works including milling, tack coat application and dense bituminous macadam laying. Experience certificates, work orders and completion certificates from past contracts must be submitted.",
+    "required_evidence": [
+      "Work Orders",
+      "Completion Certificates"
+    ],
+    "verification_type": "experience_years",
+    "threshold": 3,
+    "unit": "years"
+  },
+  {
+    "id": "REQ-PWD01-006",
+    "tender_id": "TND-PWD-2026-001",
+    "title": "Material Quality Certificate for Bitumen",
+    "category": "Technical",
+    "mandatory": true,
+    "description": "Bidder must submit bitumen test reports confirming that bituminous materials meet IRC specifications for road repair works. Source certificates identifying the bitumen supplier and refinery are also required to establish material traceability.",
+    "required_evidence": [
+      "Bitumen Test Report",
+      "Material Source Certificate"
+    ],
+    "verification_type": "document_presence",
+    "threshold": null,
+    "unit": null
+  },
+  {
+    "id": "REQ-PWD01-007",
+    "tender_id": "TND-PWD-2026-001",
+    "title": "Road Machinery and Equipment List",
+    "category": "Technical",
+    "mandatory": true,
+    "description": "Bidder must provide a comprehensive list of road repair equipment proposed for deployment including paving machines, rollers, milling machines and bitumen sprayers, along with ownership documents or lease agreements confirming availability.",
+    "required_evidence": [
+      "Equipment Availability Declaration",
+      "Ownership Documents"
+    ],
+    "verification_type": "document_presence",
+    "threshold": null,
+    "unit": null
+  },
+  {
+    "id": "REQ-PWD01-008",
+    "tender_id": "TND-PWD-2026-001",
+    "title": "EPFO Registration",
+    "category": "Legal",
+    "mandatory": false,
+    "description": "Bidder should be registered with the Employees' Provident Fund Organisation (EPFO) as required under the EPF and Miscellaneous Provisions Act, 1952. Valid EPFO registration ensures compliance with labour welfare obligations for construction workers.",
+    "required_evidence": [
+      "EPFO Registration Certificate"
+    ],
+    "verification_type": "document_presence",
+    "threshold": null,
+    "unit": null
+  },
+  {
+    "id": "REQ-NIC01-001",
+    "tender_id": "TND-NIC-2026-001",
+    "title": "GST Registration",
+    "category": "Legal",
+    "mandatory": true,
+    "description": "Bidder must hold a valid GST Registration Certificate (GSTIN) issued by the Government of India. This is a mandatory legal requirement for all government procurement contracts to ensure tax compliance.",
+    "required_evidence": [
+      "GST Certificate"
+    ],
+    "verification_type": "document_presence",
+    "threshold": null,
+    "unit": null
+  },
+  {
+    "id": "REQ-NIC01-002",
+    "tender_id": "TND-NIC-2026-001",
+    "title": "PAN Card",
+    "category": "Legal",
+    "mandatory": true,
+    "description": "Bidder must possess a valid Permanent Account Number (PAN) issued by the Income Tax Department of India. PAN is mandatory for all financial transactions and income tax compliance.",
+    "required_evidence": [
+      "PAN Card"
+    ],
+    "verification_type": "document_presence",
+    "threshold": null,
+    "unit": null
+  },
+  {
+    "id": "REQ-NIC01-003",
+    "tender_id": "TND-NIC-2026-001",
+    "title": "OEM Authorization Letter",
+    "category": "Technical",
+    "mandatory": true,
+    "description": "Bidder must submit a valid OEM authorization letter from the original equipment manufacturer (Intel, HP, Dell, Lenovo or equivalent) authorizing the bidder to supply and support the specified computer systems. The letter must be valid for the full tender period.",
+    "required_evidence": [
+      "OEM Authorization Letter"
+    ],
+    "verification_type": "document_presence",
+    "threshold": null,
+    "unit": null
+  },
+  {
+    "id": "REQ-NIC01-004",
+    "tender_id": "TND-NIC-2026-001",
+    "title": "Minimum Turnover ₹1 Crore",
+    "category": "Financial",
+    "mandatory": true,
+    "description": "Bidder must demonstrate a minimum average annual turnover of ₹1 Crore over the last three financial years to establish financial capacity for the computer supply contract. Audited financial statements certified by a Chartered Accountant are required.",
+    "required_evidence": [
+      "Audited Financial Statements",
+      "CA Certificate"
+    ],
+    "verification_type": "numeric_threshold",
+    "threshold": 10000000,
+    "threshold_display": "₹1 Crore",
+    "unit": "INR"
+  },
+  {
+    "id": "REQ-NIC01-005",
+    "tender_id": "TND-NIC-2026-001",
+    "title": "Government Computer Supply Experience",
+    "category": "Technical",
+    "mandatory": true,
+    "description": "Bidder must have successfully completed at least one government computer supply project in the preceding five years. Work orders, completion certificates and client certificates from government or PSU organizations must be submitted as evidence.",
+    "required_evidence": [
+      "Work Orders",
+      "Completion Certificates",
+      "Client Certificates"
+    ],
+    "verification_type": "project_count",
+    "threshold": 1,
+    "unit": "projects"
+  },
+  {
+    "id": "REQ-NIC01-006",
+    "tender_id": "TND-NIC-2026-001",
+    "title": "ISO 9001:2015 Certification",
+    "category": "Certifications",
+    "mandatory": false,
+    "description": "Bidders holding a valid ISO 9001:2015 Quality Management System certification from an accredited certification body are preferred as it demonstrates commitment to consistent quality in computer supply and support services.",
+    "required_evidence": [
+      "ISO 9001 Certificate"
+    ],
+    "verification_type": "certificate_validity",
+    "threshold": null,
+    "unit": null
+  },
+  {
+    "id": "REQ-NIC01-007",
+    "tender_id": "TND-NIC-2026-001",
+    "title": "Warranty Terms Declaration",
+    "category": "Technical",
+    "mandatory": true,
+    "description": "Bidder must submit a comprehensive warranty policy document and service network list confirming 3-year on-site warranty with response time commitments and authorized service centers in Rajasthan. This ensures post-supply support obligations are clearly defined.",
+    "required_evidence": [
+      "Warranty Policy Document",
+      "Service Network List"
+    ],
+    "verification_type": "document_presence",
+    "threshold": null,
+    "unit": null
+  },
+  {
+    "id": "REQ-CISF01-001",
+    "tender_id": "TND-CISF-2026-001",
+    "title": "GST Registration",
+    "category": "Legal",
+    "mandatory": true,
+    "description": "Bidder must hold a valid GST Registration Certificate (GSTIN) issued by the Government of India. This is a mandatory legal requirement for all government procurement contracts to ensure tax compliance.",
+    "required_evidence": [
+      "GST Certificate"
+    ],
+    "verification_type": "document_presence",
+    "threshold": null,
+    "unit": null
+  },
+  {
+    "id": "REQ-CISF01-002",
+    "tender_id": "TND-CISF-2026-001",
+    "title": "PAN Card",
+    "category": "Legal",
+    "mandatory": true,
+    "description": "Bidder must possess a valid Permanent Account Number (PAN) issued by the Income Tax Department of India. PAN is mandatory for all financial transactions and income tax compliance.",
+    "required_evidence": [
+      "PAN Card"
+    ],
+    "verification_type": "document_presence",
+    "threshold": null,
+    "unit": null
+  },
+  {
+    "id": "REQ-CISF01-003",
+    "tender_id": "TND-CISF-2026-001",
+    "title": "OEM Authorization for CCTV Brand",
+    "category": "Technical",
+    "mandatory": true,
+    "description": "Bidder must submit a valid OEM authorization letter from the CCTV camera manufacturer authorizing the bidder to supply, install and support the IP-based surveillance system. The authorization must be specific to the brand and model being offered.",
+    "required_evidence": [
+      "OEM Authorization Letter"
+    ],
+    "verification_type": "document_presence",
+    "threshold": null,
+    "unit": null
+  },
+  {
+    "id": "REQ-CISF01-004",
+    "tender_id": "TND-CISF-2026-001",
+    "title": "Electrical Contractor License",
+    "category": "Legal",
+    "mandatory": true,
+    "description": "Bidder must hold a valid Electrical Contractor License from the concerned State Electrical Licensing Board for undertaking electrical installation works including CCTV system wiring and PoE switch installation at CISF unit locations.",
+    "required_evidence": [
+      "Electrical Contractor License",
+      "State License"
+    ],
+    "verification_type": "document_presence",
+    "threshold": null,
+    "unit": null
+  },
+  {
+    "id": "REQ-CISF01-005",
+    "tender_id": "TND-CISF-2026-001",
+    "title": "Minimum Turnover ₹75 Lakh",
+    "category": "Financial",
+    "mandatory": true,
+    "description": "Bidder must demonstrate a minimum average annual turnover of ₹75 Lakh over the last three financial years. This financial threshold ensures the bidder has adequate resources to execute the multi-site CCTV installation contract.",
+    "required_evidence": [
+      "Audited Financial Statements",
+      "CA Certificate"
+    ],
+    "verification_type": "numeric_threshold",
+    "threshold": 7500000,
+    "threshold_display": "₹75 Lakh",
+    "unit": "INR"
+  },
+  {
+    "id": "REQ-CISF01-006",
+    "tender_id": "TND-CISF-2026-001",
+    "title": "ISO 9001:2015 Certification",
+    "category": "Certifications",
+    "mandatory": false,
+    "description": "Bidders with a valid ISO 9001:2015 Quality Management System certification are preferred as it demonstrates established quality processes for CCTV system integration, installation and commissioning services.",
+    "required_evidence": [
+      "ISO 9001 Certificate"
+    ],
+    "verification_type": "certificate_validity",
+    "threshold": null,
+    "unit": null
+  },
+  {
+    "id": "REQ-CISF01-007",
+    "tender_id": "TND-CISF-2026-001",
+    "title": "CCTV Project Completion Certificate",
+    "category": "Technical",
+    "mandatory": true,
+    "description": "Bidder must have successfully completed at least one IP-based CCTV surveillance installation project for a government or PSU organization in the preceding five years. Work orders, completion certificates and client certificates must be submitted as evidence of similar experience.",
+    "required_evidence": [
+      "Work Orders",
+      "Completion Certificates",
+      "Client Certificates"
+    ],
+    "verification_type": "project_count",
+    "threshold": 1,
+    "unit": "projects"
+  },
+  {
+    "id": "REQ-NIC02-001",
+    "tender_id": "TND-NIC-2026-002",
+    "title": "GST Registration",
+    "category": "Legal",
+    "mandatory": true,
+    "description": "Bidder must hold a valid GST Registration Certificate (GSTIN) issued by the Government of India. This is a mandatory legal requirement for all government service contracts to ensure tax compliance.",
+    "required_evidence": [
+      "GST Certificate"
+    ],
+    "verification_type": "document_presence",
+    "threshold": null,
+    "unit": null
+  },
+  {
+    "id": "REQ-NIC02-002",
+    "tender_id": "TND-NIC-2026-002",
+    "title": "PAN Card",
+    "category": "Legal",
+    "mandatory": true,
+    "description": "Bidder must possess a valid Permanent Account Number (PAN) issued by the Income Tax Department of India. PAN is mandatory for all financial transactions and income tax compliance.",
+    "required_evidence": [
+      "PAN Card"
+    ],
+    "verification_type": "document_presence",
+    "threshold": null,
+    "unit": null
+  },
+  {
+    "id": "REQ-NIC02-003",
+    "tender_id": "TND-NIC-2026-002",
+    "title": "CMMi Level 3 or ISO 9001 Certificate",
+    "category": "Certifications",
+    "mandatory": true,
+    "description": "Bidder must hold either a valid CMMi (Capability Maturity Model Integration) Level 3 or higher certification, or a valid ISO 9001:2015 certification, to demonstrate mature software development processes. These certifications are mandatory for government e-governance software projects.",
+    "required_evidence": [
+      "CMMi Certificate",
+      "ISO 9001 Certificate"
+    ],
+    "verification_type": "certificate_validity",
+    "threshold": null,
+    "unit": null
+  },
+  {
+    "id": "REQ-NIC02-004",
+    "tender_id": "TND-NIC-2026-002",
+    "title": "Minimum Turnover ₹2 Crore",
+    "category": "Financial",
+    "mandatory": true,
+    "description": "Bidder must demonstrate a minimum average annual turnover of ₹2 Crore over the last three financial years to establish financial and operational capacity for the software development contract. Audited financial statements certified by a Chartered Accountant are required.",
+    "required_evidence": [
+      "Audited Financial Statements",
+      "CA Certificate"
+    ],
+    "verification_type": "numeric_threshold",
+    "threshold": 20000000,
+    "threshold_display": "₹2 Crore",
+    "unit": "INR"
+  },
+  {
+    "id": "REQ-NIC02-005",
+    "tender_id": "TND-NIC-2026-002",
+    "title": "Government Software Development Experience",
+    "category": "Technical",
+    "mandatory": true,
+    "description": "Bidder must have successfully completed at least 2 government or public sector software development projects including web portals or mobile applications in the preceding five years. Work orders, completion certificates and client certificates must be submitted as evidence.",
+    "required_evidence": [
+      "Work Orders",
+      "Completion Certificates",
+      "Client Certificates"
+    ],
+    "verification_type": "project_count",
+    "threshold": 2,
+    "unit": "projects"
+  },
+  {
+    "id": "REQ-NIC02-006",
+    "tender_id": "TND-NIC-2026-002",
+    "title": "Key Personnel CVs",
+    "category": "Technical",
+    "mandatory": true,
+    "description": "Bidder must submit detailed CVs of the proposed Project Manager and Technical Lead, including their educational qualifications, relevant certifications and prior government IT project experience. This requirement ensures adequate technical leadership for the e-District portal development.",
+    "required_evidence": [
+      "CVs of Project Manager",
+      "CVs of Technical Lead",
+      "Qualification Certificates"
+    ],
+    "verification_type": "document_presence",
+    "threshold": null,
+    "unit": null
+  },
+  {
+    "id": "REQ-NIC02-007",
+    "tender_id": "TND-NIC-2026-002",
+    "title": "NDA and Data Security Compliance Declaration",
+    "category": "Legal",
+    "mandatory": true,
+    "description": "Bidder must submit a signed Non-Disclosure Agreement template, a data security policy document and an IT security declaration confirming compliance with Government of India data security guidelines and IT Act provisions. This is mandatory given the sensitive citizen data handled by the e-District portal.",
+    "required_evidence": [
+      "NDA Template",
+      "Data Security Policy",
+      "IT Security Declaration"
+    ],
+    "verification_type": "document_presence",
+    "threshold": null,
+    "unit": null
+  },
+  {
+    "id": "REQ-ESIC01-001",
+    "tender_id": "TND-ESIC-2026-001",
+    "title": "GST Registration",
+    "category": "Legal",
+    "mandatory": true,
+    "description": "Bidder must hold a valid GST Registration Certificate (GSTIN) issued by the Government of India. This is a mandatory legal requirement for all government procurement contracts to ensure tax compliance.",
+    "required_evidence": [
+      "GST Certificate"
+    ],
+    "verification_type": "document_presence",
+    "threshold": null,
+    "unit": null
+  },
+  {
+    "id": "REQ-ESIC01-002",
+    "tender_id": "TND-ESIC-2026-001",
+    "title": "PAN Card",
+    "category": "Legal",
+    "mandatory": true,
+    "description": "Bidder must possess a valid Permanent Account Number (PAN) issued by the Income Tax Department of India. PAN is mandatory for all financial transactions and income tax compliance.",
+    "required_evidence": [
+      "PAN Card"
+    ],
+    "verification_type": "document_presence",
+    "threshold": null,
+    "unit": null
+  },
+  {
+    "id": "REQ-ESIC01-003",
+    "tender_id": "TND-ESIC-2026-001",
+    "title": "Drug Controller Authorization / CDSCO License",
+    "category": "Legal",
+    "mandatory": true,
+    "description": "Bidder must hold a valid CDSCO Import or Manufacturing License and Drug Controller Authorization for the medical devices being supplied. This statutory authorization is required under the Medical Devices Rules, 2017 for supply of diagnostic equipment to hospitals.",
+    "required_evidence": [
+      "CDSCO Import/Manufacturing License",
+      "Drug Controller Authorization"
+    ],
+    "verification_type": "document_presence",
+    "threshold": null,
+    "unit": null
+  },
+  {
+    "id": "REQ-ESIC01-004",
+    "tender_id": "TND-ESIC-2026-001",
+    "title": "OEM Authorization for Medical Equipment",
+    "category": "Technical",
+    "mandatory": true,
+    "description": "Bidder must submit a valid OEM authorization letter from the original manufacturer of each medical equipment item being supplied, confirming the bidder is an authorized distributor or integrator. This ensures equipment authenticity and access to genuine spare parts and technical support.",
+    "required_evidence": [
+      "OEM Authorization Letter"
+    ],
+    "verification_type": "document_presence",
+    "threshold": null,
+    "unit": null
+  },
+  {
+    "id": "REQ-ESIC01-005",
+    "tender_id": "TND-ESIC-2026-001",
+    "title": "ISO 13485 or CE Mark Certificate",
+    "category": "Certifications",
+    "mandatory": true,
+    "description": "Medical equipment supplied must carry either ISO 13485 Medical Device Quality Management System certification or CE Mark certification, confirming conformity with European safety and performance standards. These certifications are mandatory to ensure patient safety and regulatory compliance.",
+    "required_evidence": [
+      "ISO 13485 Certificate",
+      "CE Mark Certificate"
+    ],
+    "verification_type": "certificate_validity",
+    "threshold": null,
+    "unit": null
+  },
+  {
+    "id": "REQ-ESIC01-006",
+    "tender_id": "TND-ESIC-2026-001",
+    "title": "Minimum Turnover ₹1 Crore",
+    "category": "Financial",
+    "mandatory": true,
+    "description": "Bidder must demonstrate a minimum average annual turnover of ₹1 Crore over the last three financial years to establish financial capacity for the medical equipment supply contract. Audited financial statements certified by a Chartered Accountant are required.",
+    "required_evidence": [
+      "Audited Financial Statements",
+      "CA Certificate"
+    ],
+    "verification_type": "numeric_threshold",
+    "threshold": 10000000,
+    "threshold_display": "₹1 Crore",
+    "unit": "INR"
+  },
+  {
+    "id": "REQ-ESIC01-007",
+    "tender_id": "TND-ESIC-2026-001",
+    "title": "Hospital Supply Experience",
+    "category": "Technical",
+    "mandatory": true,
+    "description": "Bidder must have successfully completed at least 2 medical equipment supply projects for government or private hospitals in the preceding five years. Work orders, completion certificates and client certificates from hospital authorities must be submitted as evidence.",
+    "required_evidence": [
+      "Work Orders",
+      "Completion Certificates",
+      "Client Certificates"
+    ],
+    "verification_type": "project_count",
+    "threshold": 2,
+    "unit": "projects"
+  },
+  {
+    "id": "REQ-ESIC01-008",
+    "tender_id": "TND-ESIC-2026-001",
+    "title": "Warranty and AMC Terms Declaration",
+    "category": "Technical",
+    "mandatory": true,
+    "description": "Bidder must submit a comprehensive warranty policy and Annual Maintenance Contract terms covering all medical equipment being supplied. This document must specify warranty period, response time for breakdowns, availability of spare parts and AMC charges to ensure uninterrupted hospital operations.",
+    "required_evidence": [
+      "Warranty Policy",
+      "AMC Terms and Conditions"
+    ],
+    "verification_type": "document_presence",
+    "threshold": null,
+    "unit": null
+  },
+  {
+    "id": "REQ-MNRE01-001",
+    "tender_id": "TND-MNRE-2026-001",
+    "title": "GST Registration",
+    "category": "Legal",
+    "mandatory": true,
+    "description": "Bidder must hold a valid GST Registration Certificate (GSTIN) issued by the Government of India. This is a mandatory legal requirement for all government procurement contracts to ensure tax compliance.",
+    "required_evidence": [
+      "GST Certificate"
+    ],
+    "verification_type": "document_presence",
+    "threshold": null,
+    "unit": null
+  },
+  {
+    "id": "REQ-MNRE01-002",
+    "tender_id": "TND-MNRE-2026-001",
+    "title": "PAN Card",
+    "category": "Legal",
+    "mandatory": true,
+    "description": "Bidder must possess a valid Permanent Account Number (PAN) issued by the Income Tax Department of India. PAN is mandatory for all financial transactions and income tax compliance.",
+    "required_evidence": [
+      "PAN Card"
+    ],
+    "verification_type": "document_presence",
+    "threshold": null,
+    "unit": null
+  },
+  {
+    "id": "REQ-MNRE01-003",
+    "tender_id": "TND-MNRE-2026-001",
+    "title": "MNRE/SECI Empanelment Certificate",
+    "category": "Certifications",
+    "mandatory": true,
+    "description": "Bidder must hold a valid empanelment certificate from the Ministry of New and Renewable Energy (MNRE) or Solar Energy Corporation of India (SECI) as an approved solar EPC contractor. This empanelment confirms technical competence and eligibility to execute government solar projects.",
+    "required_evidence": [
+      "MNRE Empanelment Certificate",
+      "SECI Approval"
+    ],
+    "verification_type": "certificate_validity",
+    "threshold": null,
+    "unit": null
+  },
+  {
+    "id": "REQ-MNRE01-004",
+    "tender_id": "TND-MNRE-2026-001",
+    "title": "Electrical Contractor License",
+    "category": "Legal",
+    "mandatory": true,
+    "description": "Bidder must hold a valid Electrical Contractor License from the concerned State Electrical Licensing Board for undertaking electrical installation works including solar panel wiring, inverter installation and grid-tie connections at government buildings.",
+    "required_evidence": [
+      "Electrical Contractor License"
+    ],
+    "verification_type": "document_presence",
+    "threshold": null,
+    "unit": null
+  },
+  {
+    "id": "REQ-MNRE01-005",
+    "tender_id": "TND-MNRE-2026-001",
+    "title": "Minimum Turnover ₹1 Crore",
+    "category": "Financial",
+    "mandatory": true,
+    "description": "Bidder must demonstrate a minimum average annual turnover of ₹1 Crore over the last three financial years to establish financial capacity for the solar installation contract. Audited financial statements certified by a Chartered Accountant are required.",
+    "required_evidence": [
+      "Audited Financial Statements",
+      "CA Certificate"
+    ],
+    "verification_type": "numeric_threshold",
+    "threshold": 10000000,
+    "threshold_display": "₹1 Crore",
+    "unit": "INR"
+  },
+  {
+    "id": "REQ-MNRE01-006",
+    "tender_id": "TND-MNRE-2026-001",
+    "title": "Installed 50kW+ Solar Experience",
+    "category": "Technical",
+    "mandatory": true,
+    "description": "Bidder must have successfully completed at least one rooftop or ground-mounted solar photovoltaic installation of 50 kW or more capacity in the preceding five years. Completion certificates, client certificates and site commissioning reports must be submitted as evidence.",
+    "required_evidence": [
+      "Completion Certificates",
+      "Client Certificates",
+      "Site Commissioning Reports"
+    ],
+    "verification_type": "project_count",
+    "threshold": 1,
+    "unit": "projects"
+  },
+  {
+    "id": "REQ-MNRE01-007",
+    "tender_id": "TND-MNRE-2026-001",
+    "title": "BIS/IEC Certified Solar Panels Declaration",
+    "category": "Technical",
+    "mandatory": true,
+    "description": "All solar PV modules supplied must conform to BIS or IEC standards and carry valid certification confirming performance and safety. The bidder must submit the BIS certificate, IEC test reports and module datasheet to demonstrate compliance with MNRE's Approved List of Models and Manufacturers (ALMM).",
+    "required_evidence": [
+      "BIS Certificate for Panels",
+      "IEC Test Report",
+      "Module Datasheet"
+    ],
+    "verification_type": "document_presence",
+    "threshold": null,
+    "unit": null
+  },
+  {
+    "id": "REQ-JJM01-001",
+    "tender_id": "TND-JJM-2026-001",
+    "title": "GST Registration",
+    "category": "Legal",
+    "mandatory": true,
+    "description": "Bidder must hold a valid GST Registration Certificate (GSTIN) issued by the Government of India. This is a mandatory legal requirement for all government procurement contracts to ensure tax compliance.",
+    "required_evidence": [
+      "GST Certificate"
+    ],
+    "verification_type": "document_presence",
+    "threshold": null,
+    "unit": null
+  },
+  {
+    "id": "REQ-JJM01-002",
+    "tender_id": "TND-JJM-2026-001",
+    "title": "PAN Card",
+    "category": "Legal",
+    "mandatory": true,
+    "description": "Bidder must possess a valid Permanent Account Number (PAN) issued by the Income Tax Department of India. PAN is mandatory for all financial transactions and income tax compliance.",
+    "required_evidence": [
+      "PAN Card"
+    ],
+    "verification_type": "document_presence",
+    "threshold": null,
+    "unit": null
+  },
+  {
+    "id": "REQ-JJM01-003",
+    "tender_id": "TND-JJM-2026-001",
+    "title": "Contractor License for Pipeline Works",
+    "category": "Legal",
+    "mandatory": true,
+    "description": "Bidder must hold a valid Contractor License specifically for pipeline and water works, registered with the Uttar Pradesh State PWD or equivalent authority. This license is mandatory for undertaking HDPE pipeline laying, service reservoir construction and house connection works under Jal Jeevan Mission.",
+    "required_evidence": [
+      "Contractor License",
+      "State PWD Registration"
+    ],
+    "verification_type": "document_presence",
+    "threshold": null,
+    "unit": null
+  },
+  {
+    "id": "REQ-JJM01-004",
+    "tender_id": "TND-JJM-2026-001",
+    "title": "Minimum Turnover ₹1.5 Crore",
+    "category": "Financial",
+    "mandatory": true,
+    "description": "Bidder must demonstrate a minimum average annual turnover of ₹1.5 Crore over the last three financial years to establish financial capacity for the water pipeline network contract. Audited financial statements certified by a Chartered Accountant are required.",
+    "required_evidence": [
+      "Audited Financial Statements",
+      "CA Certificate"
+    ],
+    "verification_type": "numeric_threshold",
+    "threshold": 15000000,
+    "threshold_display": "₹1.5 Crore",
+    "unit": "INR"
+  },
+  {
+    "id": "REQ-JJM01-005",
+    "tender_id": "TND-JJM-2026-001",
+    "title": "Pipeline and Water Works Experience",
+    "category": "Technical",
+    "mandatory": true,
+    "description": "Bidder must have successfully completed at least 2 water supply pipeline or distribution network projects for government or municipal bodies in the preceding five years. Work orders, completion certificates and client certificates from project owners must be submitted as evidence.",
+    "required_evidence": [
+      "Work Orders",
+      "Completion Certificates",
+      "Client Certificates"
+    ],
+    "verification_type": "project_count",
+    "threshold": 2,
+    "unit": "projects"
+  },
+  {
+    "id": "REQ-JJM01-006",
+    "tender_id": "TND-JJM-2026-001",
+    "title": "EPFO Registration",
+    "category": "Legal",
+    "mandatory": false,
+    "description": "Bidder should be registered with the Employees' Provident Fund Organisation (EPFO) under the EPF and Miscellaneous Provisions Act, 1952. Valid EPFO registration demonstrates compliance with labour welfare obligations for construction and pipeline workers.",
+    "required_evidence": [
+      "EPFO Registration Certificate"
+    ],
+    "verification_type": "document_presence",
+    "threshold": null,
+    "unit": null
+  },
+  {
+    "id": "REQ-JJM01-007",
+    "tender_id": "TND-JJM-2026-001",
+    "title": "Equipment and Machinery List",
+    "category": "Technical",
+    "mandatory": true,
+    "description": "Bidder must provide a comprehensive list of pipeline laying and construction equipment proposed for deployment including excavators, pipe-laying machines, welding equipment and compaction machinery, along with ownership or hire documents confirming availability for the contract duration.",
+    "required_evidence": [
+      "Equipment List",
+      "Ownership/Hire Documents"
+    ],
+    "verification_type": "document_presence",
+    "threshold": null,
+    "unit": null
+  },
+  {
+    "id": "REQ-AAI01-001",
+    "tender_id": "TND-AAI-2026-001",
+    "title": "GST Registration",
+    "category": "Legal",
+    "mandatory": true,
+    "description": "Bidder must hold a valid GST Registration Certificate (GSTIN) issued by the Government of India. This is a mandatory legal requirement for all government service contracts to ensure tax compliance.",
+    "required_evidence": [
+      "GST Certificate"
+    ],
+    "verification_type": "document_presence",
+    "threshold": null,
+    "unit": null
+  },
+  {
+    "id": "REQ-AAI01-002",
+    "tender_id": "TND-AAI-2026-001",
+    "title": "PAN Card",
+    "category": "Legal",
+    "mandatory": true,
+    "description": "Bidder must possess a valid Permanent Account Number (PAN) issued by the Income Tax Department of India. PAN is mandatory for all financial transactions and income tax compliance.",
+    "required_evidence": [
+      "PAN Card"
+    ],
+    "verification_type": "document_presence",
+    "threshold": null,
+    "unit": null
+  },
+  {
+    "id": "REQ-AAI01-003",
+    "tender_id": "TND-AAI-2026-001",
+    "title": "Electrical Contractor License",
+    "category": "Legal",
+    "mandatory": true,
+    "description": "Bidder must hold a valid Electrical Contractor License from the Tamil Nadu State Electrical Licensing Board authorizing undertaking of HT/LT electrical maintenance works. The license must be valid throughout the AMC period and cover the scope of work at Chennai Airport.",
+    "required_evidence": [
+      "Electrical Contractor License",
+      "State Electrical License"
+    ],
+    "verification_type": "document_presence",
+    "threshold": null,
+    "unit": null
+  },
+  {
+    "id": "REQ-AAI01-004",
+    "tender_id": "TND-AAI-2026-001",
+    "title": "Minimum Turnover ₹50 Lakh",
+    "category": "Financial",
+    "mandatory": true,
+    "description": "Bidder must demonstrate a minimum average annual turnover of ₹50 Lakh over the last three financial years to establish financial capacity for the electrical maintenance AMC contract. Audited financial statements certified by a Chartered Accountant are required.",
+    "required_evidence": [
+      "Audited Financial Statements",
+      "CA Certificate"
+    ],
+    "verification_type": "numeric_threshold",
+    "threshold": 5000000,
+    "threshold_display": "₹50 Lakh",
+    "unit": "INR"
+  },
+  {
+    "id": "REQ-AAI01-005",
+    "tender_id": "TND-AAI-2026-001",
+    "title": "AMC Contract Experience",
+    "category": "Technical",
+    "mandatory": true,
+    "description": "Bidder must have successfully executed at least 2 Annual Maintenance Contracts for HT/LT electrical systems, switchgear or similar electrical infrastructure for large commercial or government establishments. AMC agreements, completion certificates and client references must be submitted.",
+    "required_evidence": [
+      "AMC Agreements",
+      "Completion Certificates",
+      "Client References"
+    ],
+    "verification_type": "project_count",
+    "threshold": 2,
+    "unit": "projects"
+  },
+  {
+    "id": "REQ-AAI01-006",
+    "tender_id": "TND-AAI-2026-001",
+    "title": "ISO 9001:2015 Certification",
+    "category": "Certifications",
+    "mandatory": false,
+    "description": "Bidders holding a valid ISO 9001:2015 Quality Management System certification are preferred as it demonstrates established quality processes for electrical maintenance service delivery at critical infrastructure like airports.",
+    "required_evidence": [
+      "ISO 9001 Certificate"
+    ],
+    "verification_type": "certificate_validity",
+    "threshold": null,
+    "unit": null
+  },
+  {
+    "id": "REQ-AAI01-007",
+    "tender_id": "TND-AAI-2026-001",
+    "title": "Key Technician Qualifications",
+    "category": "Technical",
+    "mandatory": true,
+    "description": "Bidder must demonstrate that the technical team deployed for airport electrical maintenance includes licensed Electrical Supervisors and qualified technical staff with relevant certifications. An employee list with Electrical Supervisory License copies and technical staff qualification certificates must be submitted.",
+    "required_evidence": [
+      "Electrical Supervisory License",
+      "Technical Staff Certificates",
+      "Employee List"
+    ],
+    "verification_type": "document_presence",
+    "threshold": null,
+    "unit": null
+  },
+  {
+    "id": "REQ-MCD01-001",
+    "tender_id": "TND-MCD-2026-001",
+    "title": "GST Registration",
+    "category": "Legal",
+    "mandatory": true,
+    "description": "Bidder must hold a valid GST Registration Certificate (GSTIN) issued by the Government of India. This is a mandatory legal requirement for all government procurement contracts to ensure tax compliance.",
+    "required_evidence": [
+      "GST Certificate"
+    ],
+    "verification_type": "document_presence",
+    "threshold": null,
+    "unit": null
+  },
+  {
+    "id": "REQ-MCD01-002",
+    "tender_id": "TND-MCD-2026-001",
+    "title": "PAN Card",
+    "category": "Legal",
+    "mandatory": true,
+    "description": "Bidder must possess a valid Permanent Account Number (PAN) issued by the Income Tax Department of India. PAN is mandatory for all financial transactions and income tax compliance.",
+    "required_evidence": [
+      "PAN Card"
+    ],
+    "verification_type": "document_presence",
+    "threshold": null,
+    "unit": null
+  },
+  {
+    "id": "REQ-MCD01-003",
+    "tender_id": "TND-MCD-2026-001",
+    "title": "Authorized Dealer Certificate",
+    "category": "Technical",
+    "mandatory": true,
+    "description": "Bidder must submit a valid OEM Dealer Authorization Letter and Dealership Certificate from the vehicle manufacturer confirming the bidder is an authorized dealer for the refuse collection vehicles and dump trucks being supplied. This ensures access to genuine parts, warranty support and factory-trained service technicians.",
+    "required_evidence": [
+      "OEM Dealer Authorization Letter",
+      "Dealership Certificate"
+    ],
+    "verification_type": "document_presence",
+    "threshold": null,
+    "unit": null
+  },
+  {
+    "id": "REQ-MCD01-004",
+    "tender_id": "TND-MCD-2026-001",
+    "title": "Minimum Turnover ₹2 Crore",
+    "category": "Financial",
+    "mandatory": true,
+    "description": "Bidder must demonstrate a minimum average annual turnover of ₹2 Crore over the last three financial years to establish financial capacity for the large-scale vehicle supply contract. Audited financial statements certified by a Chartered Accountant are required.",
+    "required_evidence": [
+      "Audited Financial Statements",
+      "CA Certificate"
+    ],
+    "verification_type": "numeric_threshold",
+    "threshold": 20000000,
+    "threshold_display": "₹2 Crore",
+    "unit": "INR"
+  },
+  {
+    "id": "REQ-MCD01-005",
+    "tender_id": "TND-MCD-2026-001",
+    "title": "Government Vehicle Supply Experience",
+    "category": "Technical",
+    "mandatory": true,
+    "description": "Bidder must have successfully completed at least one vehicle supply project for a government body, municipal corporation or PSU in the preceding five years. Work orders, delivery certificates and client certificates must be submitted as evidence of similar supply experience.",
+    "required_evidence": [
+      "Work Orders",
+      "Delivery Certificates",
+      "Client Certificates"
+    ],
+    "verification_type": "project_count",
+    "threshold": 1,
+    "unit": "projects"
+  },
+  {
+    "id": "REQ-MCD01-006",
+    "tender_id": "TND-MCD-2026-001",
+    "title": "Pre-Delivery Inspection Protocol",
+    "category": "Technical",
+    "mandatory": true,
+    "description": "Bidder must submit a comprehensive Pre-Delivery Inspection (PDI) checklist and procedure document covering quality checks, safety inspections and performance tests to be conducted before delivery of each vehicle. This ensures all vehicles meet the specified technical and safety standards before acceptance by MCD.",
+    "required_evidence": [
+      "Pre-Delivery Inspection Checklist",
+      "PDI Procedure Document"
+    ],
+    "verification_type": "document_presence",
+    "threshold": null,
+    "unit": null
+  },
+  {
+    "id": "REQ-CPWD02-001",
+    "tender_id": "TND-CPWD-2026-002",
+    "title": "GST Registration",
+    "category": "Legal",
+    "mandatory": true,
+    "description": "Bidder must hold a valid GST Registration Certificate (GSTIN) issued by the Government of India. This is a mandatory legal requirement for all government procurement contracts to ensure tax compliance.",
+    "required_evidence": [
+      "GST Certificate"
+    ],
+    "verification_type": "document_presence",
+    "threshold": null,
+    "unit": null
+  },
+  {
+    "id": "REQ-CPWD02-002",
+    "tender_id": "TND-CPWD-2026-002",
+    "title": "PAN Card",
+    "category": "Legal",
+    "mandatory": true,
+    "description": "Bidder must possess a valid Permanent Account Number (PAN) issued by the Income Tax Department of India. PAN is mandatory for all financial transactions and income tax compliance.",
+    "required_evidence": [
+      "PAN Card"
+    ],
+    "verification_type": "document_presence",
+    "threshold": null,
+    "unit": null
+  },
+  {
+    "id": "REQ-CPWD02-003",
+    "tender_id": "TND-CPWD-2026-002",
+    "title": "Contractor License Class A (Central)",
+    "category": "Legal",
+    "mandatory": true,
+    "description": "Bidder must hold a valid Class A Contractor License registered with CPWD (Central Public Works Department) for undertaking large-scale building construction projects. CPWD registration is mandatory for all central government building contracts above a specified threshold value.",
+    "required_evidence": [
+      "Contractor License Class A",
+      "CPWD Registration"
+    ],
+    "verification_type": "document_presence",
+    "threshold": null,
+    "unit": null
+  },
+  {
+    "id": "REQ-CPWD02-004",
+    "tender_id": "TND-CPWD-2026-002",
+    "title": "Minimum Turnover ₹3 Crore",
+    "category": "Financial",
+    "mandatory": true,
+    "description": "Bidder must demonstrate a minimum average annual turnover of ₹3 Crore over the last three financial years to establish financial capacity for the office complex construction contract. Audited financial statements certified by a Chartered Accountant are required.",
+    "required_evidence": [
+      "Audited Financial Statements",
+      "CA Certificate"
+    ],
+    "verification_type": "numeric_threshold",
+    "threshold": 30000000,
+    "threshold_display": "₹3 Crore",
+    "unit": "INR"
+  },
+  {
+    "id": "REQ-CPWD02-005",
+    "tender_id": "TND-CPWD-2026-002",
+    "title": "Completed Building of ₹1 Crore+",
+    "category": "Technical",
+    "mandatory": true,
+    "description": "Bidder must have successfully completed at least one building construction project of value ₹1 Crore or above in the preceding five years, including RCC structure and civil works. Work orders, completion certificates and client certificates from government or institutional clients must be submitted.",
+    "required_evidence": [
+      "Work Orders",
+      "Completion Certificates",
+      "Client Certificates"
+    ],
+    "verification_type": "project_count",
+    "threshold": 1,
+    "unit": "projects"
+  },
+  {
+    "id": "REQ-CPWD02-006",
+    "tender_id": "TND-CPWD-2026-002",
+    "title": "Structural Stability Certificate",
+    "category": "Technical",
+    "mandatory": true,
+    "description": "Bidder must submit a Structural Engineer Certificate and Soil Test Report for the proposed construction site confirming structural design adequacy and foundation suitability. These documents ensure the 10-storey office complex with 2 basements meets structural safety norms.",
+    "required_evidence": [
+      "Structural Engineer Certificate",
+      "Soil Test Report"
+    ],
+    "verification_type": "document_presence",
+    "threshold": null,
+    "unit": null
+  },
+  {
+    "id": "REQ-CPWD02-007",
+    "tender_id": "TND-CPWD-2026-002",
+    "title": "EPFO and ESIC Registration",
+    "category": "Legal",
+    "mandatory": false,
+    "description": "Bidder should hold valid EPFO and ESIC registrations demonstrating compliance with statutory labour welfare obligations for construction workers. These registrations are required under the EPF Act, 1952 and ESI Act, 1948 for establishments employing 20 or more persons.",
+    "required_evidence": [
+      "EPFO Registration Certificate",
+      "ESIC Registration Certificate"
+    ],
+    "verification_type": "document_presence",
+    "threshold": null,
+    "unit": null
+  },
+  {
+    "id": "REQ-CPWD02-008",
+    "tender_id": "TND-CPWD-2026-002",
+    "title": "Safety Management Plan",
+    "category": "Technical",
+    "mandatory": true,
+    "description": "Bidder must submit a comprehensive Site Safety Plan and Safety Officer Appointment Letter for the construction project. The safety plan must cover hazard identification, PPE requirements, emergency procedures and compliance with CPWD safety codes to protect workers on the multi-storey construction site.",
+    "required_evidence": [
+      "Site Safety Plan",
+      "Safety Officer Appointment Letter"
+    ],
+    "verification_type": "document_presence",
+    "threshold": null,
+    "unit": null
+  },
+  {
+    "id": "REQ-DGS01-001",
+    "tender_id": "TND-DGS-2026-001",
+    "title": "GST Registration",
+    "category": "Legal",
+    "mandatory": true,
+    "description": "Bidder must hold a valid GST Registration Certificate (GSTIN) issued by the Government of India. This is a mandatory legal requirement for all government procurement contracts to ensure tax compliance.",
+    "required_evidence": [
+      "GST Certificate"
+    ],
+    "verification_type": "document_presence",
+    "threshold": null,
+    "unit": null
+  },
+  {
+    "id": "REQ-DGS01-002",
+    "tender_id": "TND-DGS-2026-001",
+    "title": "PAN Card",
+    "category": "Legal",
+    "mandatory": true,
+    "description": "Bidder must possess a valid Permanent Account Number (PAN) issued by the Income Tax Department of India. PAN is mandatory for all financial transactions and income tax compliance.",
+    "required_evidence": [
+      "PAN Card"
+    ],
+    "verification_type": "document_presence",
+    "threshold": null,
+    "unit": null
+  },
+  {
+    "id": "REQ-DGS01-003",
+    "tender_id": "TND-DGS-2026-001",
+    "title": "Minimum Turnover ₹25 Lakh",
+    "category": "Financial",
+    "mandatory": true,
+    "description": "Bidder must demonstrate a minimum average annual turnover of ₹25 Lakh over the last three financial years to establish financial capacity for the rate contract for office stationery supply. Audited financial statements certified by a Chartered Accountant are required.",
+    "required_evidence": [
+      "Audited Financial Statements",
+      "CA Certificate"
+    ],
+    "verification_type": "numeric_threshold",
+    "threshold": 2500000,
+    "threshold_display": "₹25 Lakh",
+    "unit": "INR"
+  },
+  {
+    "id": "REQ-DGS01-004",
+    "tender_id": "TND-DGS-2026-001",
+    "title": "Government Office Supply Experience",
+    "category": "Technical",
+    "mandatory": true,
+    "description": "Bidder must have a minimum of 2 years of experience in supplying office stationery and consumables to government ministries, departments or PSUs. Work orders, completion certificates and client certificates from government organizations must be submitted as evidence.",
+    "required_evidence": [
+      "Work Orders",
+      "Completion Certificates",
+      "Client Certificates"
+    ],
+    "verification_type": "experience_years",
+    "threshold": 2,
+    "unit": "years"
+  },
+  {
+    "id": "REQ-DGS01-005",
+    "tender_id": "TND-DGS-2026-001",
+    "title": "Product Samples and Catalog",
+    "category": "Technical",
+    "mandatory": false,
+    "description": "Bidder may submit product samples, a comprehensive product catalog and technical specifications for the stationery items being offered under the rate contract. Product samples and catalog submissions enable quality assessment and facilitate faster approval during order execution.",
+    "required_evidence": [
+      "Product Samples",
+      "Product Catalog",
+      "Technical Specifications"
+    ],
+    "verification_type": "document_presence",
+    "threshold": null,
+    "unit": null
+  },
+  {
+    "id": "REQ-DRDO01-001",
+    "tender_id": "TND-DRDO-2026-001",
+    "title": "GST Registration",
+    "category": "Legal",
+    "mandatory": true,
+    "description": "Bidder must hold a valid GST Registration Certificate (GSTIN) issued by the Government of India. This is a mandatory legal requirement for all government service contracts to ensure tax compliance.",
+    "required_evidence": [
+      "GST Certificate"
+    ],
+    "verification_type": "document_presence",
+    "threshold": null,
+    "unit": null
+  },
+  {
+    "id": "REQ-DRDO01-002",
+    "tender_id": "TND-DRDO-2026-001",
+    "title": "PAN Card",
+    "category": "Legal",
+    "mandatory": true,
+    "description": "Bidder must possess a valid Permanent Account Number (PAN) issued by the Income Tax Department of India. PAN is mandatory for all financial transactions and income tax compliance.",
+    "required_evidence": [
+      "PAN Card"
+    ],
+    "verification_type": "document_presence",
+    "threshold": null,
+    "unit": null
+  },
+  {
+    "id": "REQ-DRDO01-003",
+    "tender_id": "TND-DRDO-2026-001",
+    "title": "PSARA License (Private Security Agencies Regulation Act)",
+    "category": "Legal",
+    "mandatory": true,
+    "description": "Bidder must hold a valid PSARA (Private Security Agencies Regulation Act, 2005) license and State Security Agency License for the states where DRDO establishments are located. This statutory license is mandatory for all private security service providers operating in India.",
+    "required_evidence": [
+      "PSARA License",
+      "State Security Agency License"
+    ],
+    "verification_type": "document_presence",
+    "threshold": null,
+    "unit": null
+  },
+  {
+    "id": "REQ-DRDO01-004",
+    "tender_id": "TND-DRDO-2026-001",
+    "title": "Minimum Turnover ₹1 Crore",
+    "category": "Financial",
+    "mandatory": true,
+    "description": "Bidder must demonstrate a minimum average annual turnover of ₹1 Crore over the last three financial years to establish financial capacity for the security services contract at multiple DRDO establishments. Audited financial statements certified by a Chartered Accountant are required.",
+    "required_evidence": [
+      "Audited Financial Statements",
+      "CA Certificate"
+    ],
+    "verification_type": "numeric_threshold",
+    "threshold": 10000000,
+    "threshold_display": "₹1 Crore",
+    "unit": "INR"
+  },
+  {
+    "id": "REQ-DRDO01-005",
+    "tender_id": "TND-DRDO-2026-001",
+    "title": "Government Security Deployment Experience",
+    "category": "Technical",
+    "mandatory": true,
+    "description": "Bidder must have successfully provided security guard services at a minimum of 2 government establishments, PSUs or defence organizations in the preceding five years. Work orders, completion certificates and client certificates from the respective organizations must be submitted as evidence.",
+    "required_evidence": [
+      "Work Orders",
+      "Completion Certificates",
+      "Client Certificates"
+    ],
+    "verification_type": "project_count",
+    "threshold": 2,
+    "unit": "projects"
+  },
+  {
+    "id": "REQ-DRDO01-006",
+    "tender_id": "TND-DRDO-2026-001",
+    "title": "Police Verification Certificate for Personnel",
+    "category": "Legal",
+    "mandatory": true,
+    "description": "All security personnel deployed at DRDO establishments must have valid Police Verification Certificates and Character Verification Reports from their local police station. This requirement is mandatory for security deployments at sensitive government and defence facilities.",
+    "required_evidence": [
+      "Police Verification Certificate",
+      "Character Verification Report"
+    ],
+    "verification_type": "document_presence",
+    "threshold": null,
+    "unit": null
+  },
+  {
+    "id": "REQ-DRDO01-007",
+    "tender_id": "TND-DRDO-2026-001",
+    "title": "EPF and ESI Compliance Declaration",
+    "category": "Legal",
+    "mandatory": true,
+    "description": "Bidder must submit valid EPFO and ESIC registration certificates along with a compliance declaration confirming that all security personnel are covered under statutory labour welfare schemes. This ensures all deployed guards receive their legally mandated provident fund and medical insurance benefits.",
+    "required_evidence": [
+      "EPFO Registration Certificate",
+      "ESIC Registration Certificate",
+      "Compliance Declaration"
+    ],
+    "verification_type": "document_presence",
+    "threshold": null,
+    "unit": null
+  },
+  {
+    "id": "REQ-NITI01-001",
+    "tender_id": "TND-NITI-2026-001",
+    "title": "GST Registration",
+    "category": "Legal",
+    "mandatory": true,
+    "description": "Bidder must hold a valid GST Registration Certificate (GSTIN) issued by the Government of India. This is a mandatory legal requirement for all government consulting contracts to ensure tax compliance.",
+    "required_evidence": [
+      "GST Certificate"
+    ],
+    "verification_type": "document_presence",
+    "threshold": null,
+    "unit": null
+  },
+  {
+    "id": "REQ-NITI01-002",
+    "tender_id": "TND-NITI-2026-001",
+    "title": "PAN Card",
+    "category": "Legal",
+    "mandatory": true,
+    "description": "Bidder must possess a valid Permanent Account Number (PAN) issued by the Income Tax Department of India. PAN is mandatory for all financial transactions and income tax compliance.",
+    "required_evidence": [
+      "PAN Card"
+    ],
+    "verification_type": "document_presence",
+    "threshold": null,
+    "unit": null
+  },
+  {
+    "id": "REQ-NITI01-003",
+    "tender_id": "TND-NITI-2026-001",
+    "title": "Firm Registration Proof",
+    "category": "Legal",
+    "mandatory": true,
+    "description": "Bidder must submit a valid Certificate of Incorporation or Partnership Deed/LLP Agreement confirming the legal existence and constitution of the consulting firm. This document establishes the bidder's legal identity and eligibility to enter into government consulting contracts.",
+    "required_evidence": [
+      "Certificate of Incorporation",
+      "Partnership Deed / LLP Agreement"
+    ],
+    "verification_type": "document_presence",
+    "threshold": null,
+    "unit": null
+  },
+  {
+    "id": "REQ-NITI01-004",
+    "tender_id": "TND-NITI-2026-001",
+    "title": "Minimum Turnover ₹1 Crore",
+    "category": "Financial",
+    "mandatory": true,
+    "description": "Bidder must demonstrate a minimum average annual turnover of ₹1 Crore over the last three financial years to establish financial and organizational capacity for the EV transition roadmap consultancy. Audited financial statements certified by a Chartered Accountant are required.",
+    "required_evidence": [
+      "Audited Financial Statements",
+      "CA Certificate"
+    ],
+    "verification_type": "numeric_threshold",
+    "threshold": 10000000,
+    "threshold_display": "₹1 Crore",
+    "unit": "INR"
+  },
+  {
+    "id": "REQ-NITI01-005",
+    "tender_id": "TND-NITI-2026-001",
+    "title": "Completed 3 Similar Consultancy Assignments",
+    "category": "Technical",
+    "mandatory": true,
+    "description": "Bidder must have successfully completed at least 3 similar consultancy assignments in the domains of transport policy, energy transition, EV ecosystem or related sectors for government or international development organizations in the preceding seven years. Assignment completion certificates, client references and work orders must be submitted.",
+    "required_evidence": [
+      "Assignment Completion Certificates",
+      "Client References",
+      "Work Orders"
+    ],
+    "verification_type": "project_count",
+    "threshold": 3,
+    "unit": "projects"
+  },
+  {
+    "id": "REQ-NITI01-006",
+    "tender_id": "TND-NITI-2026-001",
+    "title": "Key Personnel CVs",
+    "category": "Technical",
+    "mandatory": true,
+    "description": "Bidder must submit detailed CVs of the proposed Team Leader and Domain Experts covering their educational qualifications, relevant certifications and prior experience in transport policy, EV technology and financial modelling. The quality and experience of key personnel are critical evaluation criteria for this consultancy assignment.",
+    "required_evidence": [
+      "CVs of Team Leader",
+      "CVs of Domain Experts",
+      "Qualification Certificates"
+    ],
+    "verification_type": "document_presence",
+    "threshold": null,
+    "unit": null
+  },
+  {
+    "id": "REQ-NITI01-007",
+    "tender_id": "TND-NITI-2026-001",
+    "title": "ISO 9001 or Professional Accreditation",
+    "category": "Certifications",
+    "mandatory": false,
+    "description": "Consulting firms holding a valid ISO 9001:2015 certification or a professional accreditation from a recognized industry body are preferred as it demonstrates commitment to quality in consulting service delivery. Such accreditation adds credibility to the firm's methodology and deliverable standards.",
+    "required_evidence": [
+      "ISO 9001 Certificate",
+      "Professional Accreditation Certificate"
+    ],
+    "verification_type": "certificate_validity",
+    "threshold": null,
+    "unit": null
   }
 ]
