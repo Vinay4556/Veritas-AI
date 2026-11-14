@@ -55,6 +55,9 @@ export const getDashboard = () => api.get('/dashboard')
 
 // ── Tenders ───────────────────────────────────────────────────
 export const getTenders = () => api.get('/tenders')
+export const getTendersFiltered = (params) => api.get('/tenders', { params })
+export const getClassifications = () => api.get('/tenders/classifications')
+export const classifyTender = (id, data) => api.post(`/tenders/${id}/classify`, data)
 export const getTender = (id) => api.get(`/tenders/${id}`)
 export const getTenderRequirements = (id) => api.get(`/tenders/${id}/requirements`)
 export const getTenderBidders = (id) => api.get(`/tenders/${id}/bidders`)
@@ -85,6 +88,7 @@ export const uploadDocuments = (bidderId, files, tenderId = null, requirementId 
 export const getDocument = (id) => api.get(`/documents/${id}`)
 export const deleteDocument = (id) => api.delete(`/documents/${id}`)
 export const reprocessDocument = (id) => api.post(`/documents/${id}/reprocess`)
+export const manualClassifyDocument = (id, data) => api.post(`/documents/${id}/classify`, data)
 export const checkDuplicateDocument = (bidderId, docType, requirementId = '') =>
   api.get(`/documents/check-duplicate`, { params: { bidder_id: bidderId, doc_type: docType, requirement_id: requirementId } })
 // These return raw file URLs — used directly in <iframe> / <img> / window.open
@@ -234,3 +238,8 @@ export async function downloadFile(path, filename) {
   a.click()
   setTimeout(() => { document.body.removeChild(a); URL.revokeObjectURL(url) }, 1000)
 }
+
+// ── Migration ────────────────────────────────────────────────────────────────
+export const checkMigrationStatus = () => api.get('/migration/status')
+export const migrateLocalStorage = (bidderId, documents) =>
+  api.post('/migration/local-storage', { bidder_id: bidderId, documents })

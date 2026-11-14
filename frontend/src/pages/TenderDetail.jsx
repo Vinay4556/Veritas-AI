@@ -13,6 +13,37 @@ import { useLanguage } from '../context/LanguageContext.jsx'
 import { useToast } from '../components/Toast.jsx'
 import api from '../services/api.js'
 
+// ── Classification short labels ──────────────────────────────
+const SHORT_LABELS = {
+  CIVIL_WORKS:              'Civil Works',
+  ELECTRICAL_POWER:         'Electrical',
+  MECHANICAL_INDUSTRIAL:    'Mechanical',
+  IT_SOFTWARE:              'IT & Software',
+  GOODS_SUPPLY:             'Goods',
+  HEALTHCARE_MEDICAL:       'Healthcare',
+  TRANSPORT_LOGISTICS:      'Transport',
+  WATER_SANITATION:         'Water',
+  CONSULTANCY:              'Consultancy',
+  MAINTENANCE_REPAIR:       'Maintenance',
+  SECURITY:                 'Security',
+  OTHER:                    'Other',
+}
+
+const CLASSIFICATION_COLORS = {
+  CIVIL_WORKS:           'bg-orange-50 text-orange-700',
+  ELECTRICAL_POWER:      'bg-yellow-50 text-yellow-700',
+  MECHANICAL_INDUSTRIAL: 'bg-cyan-50 text-cyan-700',
+  IT_SOFTWARE:           'bg-purple-50 text-purple-700',
+  GOODS_SUPPLY:          'bg-green-50 text-green-700',
+  HEALTHCARE_MEDICAL:    'bg-red-50 text-red-700',
+  TRANSPORT_LOGISTICS:   'bg-blue-50 text-blue-700',
+  WATER_SANITATION:      'bg-teal-50 text-teal-700',
+  CONSULTANCY:           'bg-indigo-50 text-indigo-700',
+  MAINTENANCE_REPAIR:    'bg-gray-50 text-gray-700',
+  SECURITY:              'bg-rose-50 text-rose-700',
+  OTHER:                 'bg-slate-50 text-slate-700',
+}
+
 export default function TenderDetail() {
   const { tenderId } = useParams()
   const navigate = useNavigate()
@@ -149,6 +180,20 @@ export default function TenderDetail() {
                 {(tender.status || 'ACTIVE').toUpperCase()}
               </span>
               {tender.category && <span className="text-xs px-2 py-0.5 font-medium bg-purple-50 text-purple-700" style={{ borderRadius: '2px' }}>{tender.category}</span>}
+              {tender.classification && (
+                <span
+                  className={`text-xs px-2 py-0.5 font-medium ${CLASSIFICATION_COLORS[tender.classification] || 'bg-slate-50 text-slate-700'}`}
+                  style={{ borderRadius: '2px' }}
+                  title={tender.classification_reason || tender.classification}
+                >
+                  {SHORT_LABELS[tender.classification] || tender.classification}
+                </span>
+              )}
+              {tender.procurement_type && (
+                <span className="text-xs px-2 py-0.5 font-medium bg-gray-50 text-gray-600 border border-gray-200" style={{ borderRadius: '2px' }}>
+                  {tender.procurement_type}
+                </span>
+              )}
               {corrigenda.length > 0 && <span className="text-xs px-2 py-0.5 bg-amber-50 text-amber-700 border border-amber-200 font-semibold" style={{ borderRadius: '2px' }}>{corrigenda.length} Corrigendum{corrigenda.length > 1 ? 'a' : ''}</span>}
               {extensions.length > 0 && <span className="text-xs px-2 py-0.5 bg-blue-50 text-blue-600 border border-blue-200 font-semibold" style={{ borderRadius: '2px' }}>Extended ×{extensions.length}</span>}
               {policy.procurement_method && <span className="text-xs px-2 py-0.5 bg-gray-50 text-gray-600 border border-gray-200 font-semibold" style={{ borderRadius: '2px' }}>{policy.procurement_method}</span>}
