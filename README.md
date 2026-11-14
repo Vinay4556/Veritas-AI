@@ -1,357 +1,435 @@
-# Veritas AI — SIH26100 · Team Aevora
+# Veritas AI
 
-**Evidence-Driven Procurement Compliance & Performance Intelligence**
+**Procurement compliance intelligence — evidence-driven bid review in one clear workspace.**
 
-> Smart India Hackathon 2026 · Problem Statement SIH26100 · **Team Aevora**  
-> Organization: Ministry of Petroleum & Natural Gas · CPCL  
-> Category: Software · Theme: Smart Automation
+Veritas AI helps procurement teams bring tender requirements, bidder documents and
+verification evidence together, review compliance consistently, and record
+decisions with a complete audit trail. It is a decision-support system: AI
+extracts, matches and explains, while compliance rules stay deterministic and the
+final decision remains with the authorised officer.
 
 ---
 
-## Problem Statement
+## What it does
 
-Government procurement officers at CPCL/CPSEs manually verify hundreds of bidder documents against tender requirements — slow, error-prone, and inconsistent. No cross-verification against government data sources. No historical vendor performance tracking. No public transparency. No structured bid lifecycle management.
+- **Tender management** — create tenders, define mandatory and optional
+  requirements, run pre-bid meetings and corrigenda.
+- **Bidder & document intake** — upload bidder documents (PDF, images, DOCX),
+  extract text, classify document type and detect tampering signals.
+- **Compliance review** — match each requirement to evidence, flag verified,
+  needs-review, non-compliant and missing items, and show the source document
+  behind every finding.
+- **Verification adapters** — offline structural checks by default, with optional
+  live government-data adapters (GSTIN, PAN, MCA21) when credentials are configured.
+- **Evaluation & decisions** — technical/financial evaluation, bid comparison,
+  QCBS/L1/MSE/Make-in-India support, two-envelope opening, and an officer
+  decision step that is permanently recorded.
+- **Contracts, inspections, corrective actions, grievances and public
+  transparency** — the full lifecycle after award, including a stakeholder view
+  and an append-only audit trail.
+- **AI assistant** — plain-language explanations via Groq API. Without an API key
+  it returns a deterministic 503; add `GROQ_API_KEY` to enable live responses.
 
-## Solution — Veritas AI
+---
 
-A **full Indian government e-procurement ecosystem** with AI-assisted evaluation, covering the complete procurement lifecycle from tender creation to contract completion and public disclosure.
+## Portals & sample accounts
+
+| Portal | Email | Password | Access |
+|--------|-------|----------|--------|
+| Procurement officer | `officer@demo.gov` | `password` | Tenders, evaluation, decisions |
+| Bidder | `bidder@demo.com` | `password` | Tender discovery, bid submission |
+| Bidder 2 | `bidder2@demo.com` | `password` | Second bidder for comparison testing |
+| Public stakeholder | `citizen@demo.com` | `password` | Transparency, timelines, feedback |
+
+These are seeded local accounts for evaluation. In PostgreSQL mode the first login
+automatically upgrades each password to bcrypt — no manual step needed.
+Change or remove them before any real deployment.
+
+---
+
+## Architecture
 
 ```
-Tender Creation → Pre-Bid Meeting → Corrigendum → Bid Submission →
-Bid Opening (Two-Envelope) → Compliance Scrutiny → EMD Verification →
-Technical Evaluation → Financial Evaluation → QCBS/L1/RA →
-Officer Decision → Contract Award → Delivery → Inspection →
-Grievance → Public Disclosure → Vendor 360° Profile
+┌─────────────────┐     ┌──────────────────┐     ┌──────────────────────────┐
+│  Frontend       │     │  Backend         │     │  Storage                 │
+│  React 18 + Vite│────▶│  Flask 3 (Python)│────▶│  JSON files  (local dev) │
+│  Port 3000      │     │  Port 5000       │     │  PostgreSQL  (production) │
+└─────────────────┘     └──────────────────┘     └──────────────────────────┘
 ```
-
-The AI is a **decision-support system** at every stage. Final decisions remain exclusively with authorized officers.
-
----
-
-## Three Portals
-
-| Portal | Login | Access |
-|--------|-------|--------|
-| **Procurement Officer** | officer@demo.gov / password | Full lifecycle management |
-| **Bidder / Vendor** | bidder@demo.com / password | Bid submission, readiness, grievances |
-| **Public / Stakeholder** | citizen@demo.com / password | Transparency, timeline, feedback |
-
----
-
-## Quick Start
-
-```bash
-# Backend — zero config: uses local JSON files in backend/data/
-cd backend
-pip install -r requirements.txt
-python app.py
-# → http://localhost:5000   (health: /api/health)
-
-# Frontend (new terminal) — proxies /api to the backend
-cd frontend
-npm install
-npm run dev
-# → http://localhost:3000
-
-# Optional translation engine
-cd backend && docker compose up -d libretranslate
-```
-
-End-to-end check of any running backend: `python backend/tests/smoke_test.py [base-url]`.
-
-Run the backend test suite with `python -m unittest discover -s tests`.
-
----
-
-## Language Switching — free, self-hosted, non-expiring
-
-The UI supports 100+ languages. Translations are produced by a **self-hosted
-[LibreTranslate](https://github.com/LibreTranslate/LibreTranslate)** instance
-(MIT-licensed) rather than a hosted API, so there is no API key, no quota, no
-expiry, and no third party receives the text being translated.
-
-**How a language switch works**
-
-1. `en`, `hi` and `kn` ship pre-translated in the bundle and switch instantly.
-2. Any other language triggers one request to `POST /api/translate/bundle` with
-   the English strings. The backend translates all of them and registers the
-   result with i18next, so the whole UI switches in one round-trip.
-3. The result is written to `backend/data/translations.json` and served from
-   there forever after. **A language only ever needs translating once** — and it
-   keeps working even if the LibreTranslate container is later stopped, since
-   the cache is the durable store and the engine is only consulted for strings
-   never seen before.
-
-If the engine is unreachable, endpoints degrade to returning the English source
-text rather than failing, and failed translations are never written to the
-cache, so they are retried once the engine is back.
-
-**Endpoints**
-
-| Method | Endpoint | Purpose |
-| --- | --- | --- |
-| `POST` | `/api/translate` | Translate one string |
-| `POST` | `/api/translate/batch` | Translate up to 500 strings in one request |
-| `POST` | `/api/translate/bundle` | Build a complete i18next bundle for a language |
-| `GET` | `/api/translate/languages` | Languages the engine has models for |
-| `GET` | `/api/translate/status` | Engine health, cache size, cost metadata |
-
-**Configuration** (`backend/.env`)
-
-```bash
-LIBRETRANSLATE_URL=http://localhost:5001
-LIBRETRANSLATE_TIMEOUT=20
-```
-
-To reduce the delay on the first switch to a language, preload its models:
-
-```bash
-docker compose exec libretranslate libretranslate --load-only en ta te bn mr gu
-```
-
----
-
-## Complete Feature Set
-
-### Officer Portal (26 pages)
-
-**Tender Management**
-- Create tender with full **Evaluation Policy config** (procurement method: L1/QCBS/Reverse Auction, bid type: Single/Two-Envelope/Three-Stage, QCBS weights, MSE preference, Make in India, OEM, EMD, consortium)
-- Tender detail with real-time bid count, corrigenda list, policy summary
-- **Deadline Extension** — server-side validated, extension history preserved
-- **Tender Cancellation** + **Re-Tender** with parent linkage
-- **Corrigendum Engine** — field-level diffs, version history, bidder acknowledgement
-- **Pre-Bid Meeting** — schedule (Online/Physical/Hybrid), manage Q&A, publish answers
-
-**Bid Management**
-- **Two-Envelope System** — financial bids sealed until officer opens; logged to audit
-- **Bid Stage Lifecycle** — SUBMITTED → COMPLIANCE_REVIEW → TECHNICAL_EVALUATION → FINANCIAL_EVALUATION → AWARDED
-- **EMD Verification** — AI mismatch detection, officer confirmation
-- **Price Reasonableness Engine** — vs estimated value, peer comparison, abnormal bid detection
-- **AI Override** — officer overrides AI result with mandatory reason, permanently audit-logged
-- Bid Comparison with QCBS 70:30, L1/L2/L3, Recommend Award banner
-
-**Evaluation**
-- **Technical Evaluation Committee** — form committee, per-evaluator scoring, aggregate (Average/Min/Max), immutable scores
-- **MSE/Startup Preference Verification** — configurable per tender
-- **Make in India / Local Content Verification**
-- **OEM Authorization Verification**
-- **Vendor Integrity Check** — blacklist, debarment, conflict of interest
-
-**Compliance & AI**
-- AI compliance engine — 20 requirements, weighted scoring, evidence-based
-- Cross-document validation — entity name consistency, date checks
-- Document tampering detection — metadata, reused certs, duplicate cert numbers
-- Government verification — 8 adapters (GSTN, UDYAM, MCA21, EPFO, ESIC, DIGILOCKER, BLACKLIST, STARTUP_INDIA)
-- AI explainability — requirement + evidence + page + confidence + reason for every result
-- AI human-in-the-loop states: AI_RECOMMENDATION → OFFICER_REVIEW → OFFICER_CONFIRMED → OFFICER_OVERRIDDEN
-
-**Decision & Contract**
-- **Officer Decision** — QUALIFY / DISQUALIFY / CLARIFICATION with tampering/risk interlocks
-- **Contract Award UI** — pre-filled from bid data, 5 auto-milestones
-- Contract management — milestones, inspection, corrective actions
-- Quality inspections with checklist + history
-- **Performance security tracking**
-
-**Reverse Auction**
-- **RA Simulation** — SCHEDULED → LIVE → CLOSED → FINAL_PRICE
-- Live countdown, price board, L1 determination (DEMO / SIMULATED mode)
-
-**Administration**
-- **Grievance Centre** — assign, respond, escalate, close
-- **Conflict of Interest Declarations**
-- Reports — HTML generation + download
-- Immutable Audit Trail — 30+ event types
-- Alerts, Evaluation Tasks, Feedback Centre
-- **In-App Notifications** — real-time bell with unread count
-- **Global Procurement Search** — tenders, bidders, bids, contracts (role-aware)
-
----
-
-### Bidder Portal (9 pages)
-
-- Dashboard with bid readiness score, action alerts, deadline warnings
-- Tender Discovery with search/filter
-- **Financial Bid Form** — quoted price, GST breakdown (auto-calc), delivery period, bid validity (120 days), payment terms, EMD reference + issuing bank
-- **Save as Draft** → **Final Submit** with pre-submission checklist
-- **Bid Withdrawal** — server-side deadline check, reason required
-- **Bid Modification** — versions archived, deadline enforced
-- **Version History** — view all prior bid versions
-- My Bids — full lifecycle status, financial summary, withdraw/modify actions
-- Bid Readiness — dynamic per-requirement check from uploaded documents
-- Clarification responses (bidder → officer)
-- **Grievance / Representation submission and tracking**
-- Document upload with AI classification
-
----
-
-### Public / Stakeholder Portal (5 pages)
-
-- Public Dashboard — live tender stats, recent tenders
-- Tender Browsing — public-safe data only
-- **Procurement Timeline** — 11-stage, dynamically generated for any tender, delay detection
-- Public Feedback — AI-classified by priority
-- **Grievance Statistics** — public-safe aggregate only
-
----
-
-## API Endpoints (90+ total)
-
-| Category | Endpoints |
-|----------|-----------|
-| Auth | login, logout, me, change-password |
-| Tenders | list, detail, requirements, bidders, create, **extend**, **cancel**, **re-tender**, corrigendum, corrigendum acknowledge, prebid schedule, prebid questions, prebid answer |
-| Bidders | detail, documents, compliance, analyze, decision, create |
-| Bids (officer) | list, open-financial, advance-stage, **EMD verify**, **price analysis**, **AI override**, **preference verify**, **local content**, **OEM verify** |
-| Bids (bidder) | submit/draft, **withdraw**, **modify**, **versions** |
-| Documents | upload, detail, view, download, tampering |
-| Contracts | CRUD, milestone, inspections, corrective actions, vendor profiles |
-| Verification | adapters, verify, bidder full, GSTN, blacklist |
-| Committee | get, form, **submit score** |
-| Notifications | get, mark read |
-| Grievances | submit, list (officer), bidder list, assign, respond, public stats |
-| Integrity | **vendor integrity**, **conflict declarations** |
-| Search | **global search** (role-aware) |
-| Officer Portal | tasks, clarifications, feedback, leaderboard |
-| Bidder Portal | dashboard, tenders, readiness, bids, clarifications |
-| Public Portal | dashboard, tenders, detail, timeline, feedback, public vendor profile |
-| Reports | generate, download, list, serve |
-| Dashboard | stats + audit + charts |
-
----
-
-## Government Verification Architecture
-
-```python
-ADAPTERS = {
-  'GSTN':          GSTNAdapter(),        # GSTIN format + entity lookup
-  'UDYAM':         UdyamAdapter(),       # MSME registration
-  'MCA21':         MCA21Adapter(),       # CIN + company status
-  'EPFO':          EPFOAdapter(),        # PF registration
-  'ESIC':          ESICAdapter(),        # ESI registration
-  'DIGILOCKER':    DigiLockerAdapter(),  # Document verification
-  'BLACKLIST':     BlacklistAdapter(),   # Debarment check
-  'STARTUP_INDIA': StartupIndiaAdapter() # DPIIT recognition
-}
-```
-
-Mode switching: `GOV_ADAPTER_MODE=MOCK|SANDBOX|LIVE`  
-All adapters in MOCK mode for demo. Sandbox/Live require production credentials.
-
----
-
-## Scoring & Evaluation Formulas
-
-**Compliance Score:**
-```
-Score = (Σ satisfied weight / Σ total weight) × 100
-Mandatory = 5 pts  |  Optional = 2 pts
-REVIEW = 50% credit  |  NON_COMPLIANT / MISSING = 0
-
-Risk:  LOW (≥85%, 0 non-compliant)  MEDIUM (≥70%, ≤1)  HIGH (otherwise)
-```
-
-**QCBS Composite:**
-```
-Technical Score × 70% + Price Score × 30%
-Price Score = (L1 price / bidder price) × 100
-Min technical threshold: configurable per tender (default 60)
-```
-
----
-
-## Demo Scenario (Full Story)
-
-**Tender:** GEM-DEMO-2026-001 — Supply of Industrial IoT Monitoring Equipment · ₹4.8 Crore  
-**EMD:** ₹24 Lakh · **Two-Envelope** · **QCBS 70:30** · **Make in India applicable**
-
-| Bidder | Compliance | Risk | Technical | Price | EMD | Key Issues |
-|--------|-----------|------|-----------|-------|-----|------------|
-| Nova Engineering | **91%** | LOW | 91/100 | ₹1.35 Cr | ✓ VERIFIED | Minor ISO name variation |
-| ABC Technologies | **87%** | MEDIUM | 82/100 | ₹1.18 Cr | ✓ VERIFIED | ISO expiry, OEM name mismatch |
-| Bharat Industrial | **61%** | HIGH | 45/100 | ₹92 L | ✗ MISMATCH | Low turnover, missing docs, EMD short |
-
-**Demo Flow (8 minutes):**
-1. Officer login → Dashboard → Action widgets (EMD pending, high-risk bids)
-2. Tenders → GEM-DEMO-2026-001 → Pre-Bid Meeting Q&A, corrigendum, policy config
-3. BID-002 (Bharat) → Compliance → HIGH RISK, tampering flags, EMD mismatch
-4. Bid Comparison → QCBS scores, sealed prices → "Open Financial Bids" ceremony
-5. QCBS Recommend Award → Nova Engineering → Officer Decision → Contract Award
-6. Evaluation Committee → 3 evaluators, scores 91/90/92 → aggregate 91
-7. Reverse Auction simulation → price countdown → L1 determined
-8. Grievance Centre → ABCs ISO objection → officer responds
-9. Bidder login → Submit Bid → Financial form, GST breakup, EMD → Draft → Final Submit
-10. Public portal → Timeline → 11 stages → grievance stats
-
----
-
-## Security
-
-- Token-based auth, SHA-256 hashed passwords
-- `@require_role` RBAC on all sensitive routes
-- Public APIs return only public-safe fields (no PAN/bank/officer notes)
-- Immutable audit trail — every action timestamped and attributed
-- Server-side deadline validation for bid submission, withdrawal, modification
-- AI override requires mandatory reason — permanently audit-logged
-- No secrets in frontend; all credentials via environment variables
-
----
-
-## Data Models (20 JSON files)
-
-`tenders`, `requirements`, `bidders`, `bids`, `documents`, `contracts`, `inspections`, `corrective_actions`, `vendor_profiles`, `compliance`, `audit`, `clarifications`, `evaluation_tasks`, `feedback`, `notifications`, `grievances`, `eval_committees`, `ai_overrides`, `conflict_declarations`, `users`
-
-All schemas designed for PostgreSQL migration — JSON is the demo store only.
-
----
-
-## Tech Stack
 
 | Layer | Technology |
 |-------|-----------|
-| Frontend | React 18, Vite, TailwindCSS, Recharts, Lucide React, Axios |
-| Design | Noto Serif + Noto Sans (GoI typography), Navy + Saffron palette, GoI design system |
-| Backend | Python 3.10+, Flask 3.0, Flask-CORS |
-| Document AI | PyMuPDF — PDF extraction, SHA-256 hashing, tampering analysis |
-| Storage | JSON files (demo) → PostgreSQL ready |
-| Auth | Token-based, SHA-256, RBAC middleware |
-| AI Mode | Demo (deterministic rules) / Live (OPENAI_API_KEY configurable) |
+| Frontend | React 18.3, Vite 8.3, TailwindCSS 3.4, Recharts, Lucide, Axios, i18next |
+| Backend | Python 3.10+, Flask 3.0, Flask-CORS, itsdangerous (signed tokens), bcrypt |
+| Auth | URLSafeTimedSerializer tokens · bcrypt password hashing · persistent revocation via `revoked_tokens` table |
+| Rate limiting | flask-limiter (10 req/min per IP on `/api/auth/login`) |
+| Local storage | JSON files under `backend/data/` — zero config, no database required |
+| Production storage | PostgreSQL (all 24 tables) + local filesystem or Supabase Storage for file blobs |
+| Document AI | PyMuPDF 1.24+ (PDF text + hashing); optional Tesseract OCR for scanned images |
+| AI assistant | Deterministic 503 (no key) or live Groq API (`GROQ_API_KEY`) |
+| Translation | Self-hosted LibreTranslate (optional Docker service) + MyMemory fallback |
+
+### Dual-mode storage
+
+The app switches storage automatically based on `DATABASE_URL`:
+
+| `DATABASE_URL` | Storage | Use case |
+|---|---|---|
+| Empty / not set | JSON files in `backend/data/` | Local evaluation, demos |
+| Set to a PostgreSQL URL | PostgreSQL (all entities) | Production, persistent data |
+
+In production mode (PostgreSQL) **every** entity is persisted to the database:
+tenders, bidders, bids, contracts, inspections, compliance results, audit trail,
+grievances, notifications, and more. The app never silently falls back to JSON in
+production.
 
 ---
 
-## Differentiation
+## Quick start (local, no database)
 
-| Feature | Generic Tools | GeM Portal | Veritas AI |
-|---------|--------------|------------|-----------|
-| Full bid lifecycle (20 stages) | ✗ | Partial | ✓ |
-| AI document classification | Partial | ✗ | ✓ (15 types) |
-| Two-envelope bid system | ✗ | ✗ | ✓ |
-| QCBS + L1 + Reverse Auction | ✗ | ✗ | ✓ |
-| Government cross-verification | ✗ | ✗ | ✓ (8 sources) |
-| EMD mismatch detection | ✗ | ✗ | ✓ |
-| Document tampering detection | ✗ | ✗ | ✓ |
-| Technical committee scoring | ✗ | ✗ | ✓ |
-| AI explainability (evidence + page) | ✗ | ✗ | ✓ |
-| AI override with audit | ✗ | ✗ | ✓ |
-| Bid withdrawal / versioning | ✗ | Partial | ✓ |
-| Grievance / representation | ✗ | Partial | ✓ |
-| Public procurement timeline | ✗ | Partial | ✓ (dynamic) |
-| Vendor 360° profile | ✗ | ✗ | ✓ |
-| In-app notifications | ✗ | ✗ | ✓ |
-| Global search | ✗ | Partial | ✓ (role-aware) |
-| Human-in-the-loop enforced | ✗ | ✗ | ✓ |
-| Complete audit trail | Partial | Partial | ✓ (30+ events) |
-| Hindi / English | ✗ | ✗ | ✓ |
-| Government of India design | ✗ | ✓ | ✓ |
+### Prerequisites
+- Python 3.10+ (3.14 tested)
+- Node.js 20.19+ (24 tested)
+- No database required for evaluation
+
+### Windows (one command)
+
+```bat
+start.bat
+```
+
+This starts both the backend and frontend in separate console windows.
+On first run it copies `backend/.env.example` → `backend/.env` if no `.env` exists.
+
+### Manual start (Windows — two PowerShell terminals)
+
+**Terminal 1 — Backend**
+```powershell
+cd D:\your-project\Veritas-AI\backend
+pip install -r requirements.txt
+python app.py
+```
+
+**Terminal 2 — Frontend**
+```powershell
+cd D:\your-project\Veritas-AI\frontend
+npm install
+npm run dev
+```
+
+- Backend: http://localhost:5000 · health check: http://localhost:5000/api/health
+- Frontend: http://localhost:3000 · Vite proxies `/api/*` to the backend automatically
+
+### Linux / macOS
+
+```bash
+# Terminal 1
+cd backend && pip install -r requirements.txt && python app.py
+
+# Terminal 2
+cd frontend && npm install && npm run dev
+```
 
 ---
 
-## Team
+## Local development with PostgreSQL
 
-Smart India Hackathon 2026 · **SIH26100** · **Team Aevora**  
-Problem: AI-Powered Integrated Bid Compliance Verification Platform for GeM Procurement  
-Organization: Ministry of Petroleum & Natural Gas · CPCL
+If you want persistent data locally (data survives backend restarts):
+
+### 1. Create the database
+
+```sql
+-- In psql
+CREATE DATABASE veritas_ai;
+-- pgcrypto is NOT required on PostgreSQL 13+
+```
+
+### 2. Configure `backend/.env`
+
+```env
+DATABASE_URL=postgresql://postgres:your_password@localhost:5432/veritas_ai
+```
+
+Do not set `FLASK_ENV=production` for local development — that enables
+production guards (mandatory `SECRET_KEY`, no plaintext password fallback).
+
+### 3. Run migrations
+
+```powershell
+cd backend
+python -m alembic upgrade head
+```
+
+This applies all 4 migrations in sequence, creating all 24 tables:
+
+| Migration | Revision | Contents |
+|---|---|---|
+| Initial schema | `6fd62e526b64` | users, tenders, bidders, requirements, documents + 10 supporting tables |
+| Sprint 2 entities | `a3f91b2c8e47` | Full bids, contracts, inspections, corrective_actions, vendor_profiles, compliance_results, feedback, rejection_feedback, ai_overrides, eval_committees, conflict_declarations + extended columns |
+| Sprint 3 revocation | `b7d3c2a1f804` | revoked_tokens (persistent logout) |
+| Sprint 4 conflict columns | `c9e4d3b2a156` (head) | conflict_declarations: officer_id, officer_name, has_conflict, action |
+
+### 4. Seed demo users (PostgreSQL only)
+
+```powershell
+cd backend
+python scripts/create_demo_users.py
+```
+
+This inserts 4 demo accounts with bcrypt-hashed passwords. It is fully
+idempotent — safe to run multiple times.
+
+> **SHA-256 upgrade:** if users already exist with SHA-256 hashes, their
+> passwords are automatically upgraded to bcrypt on their first successful login.
+> No manual step required.
+
+### 5. Start the app (same as above)
+
+```powershell
+# Terminal 1
+cd backend && python app.py
+
+# Terminal 2
+cd frontend && npm run dev
+```
+
+Verify the connection: http://localhost:5000/api/health should return
+`"db_connected": true, "db_mode": "postgresql"`.
 
 ---
 
-*Built to Win. Built to Scale. Built for India.*
+## Configuration reference
+
+Copy `backend/.env.example` to `backend/.env`.
+
+```env
+# ── Database ─────────────────────────────────────────────────────────────────
+# Leave empty for local JSON mode. Set for PostgreSQL persistence.
+DATABASE_URL=postgresql://user:password@localhost:5432/veritas_ai
+
+# ── Security ──────────────────────────────────────────────────────────────────
+# Generate: python -c "import secrets; print(secrets.token_hex(32))"
+# Required in production — app refuses to start without it when FLASK_ENV=production.
+SECRET_KEY=
+TOKEN_TTL_HOURS=12
+
+# ── CORS ──────────────────────────────────────────────────────────────────────
+# localhost:3000 and localhost:5173 are always allowed; add extra origins here.
+CORS_ORIGINS=http://localhost:3000,http://localhost:5173
+
+# ── AI assistant (optional) ───────────────────────────────────────────────────
+# Without a key, /api/chat returns 503 with an informative message.
+GROQ_API_KEY=
+
+# ── Government API adapters ───────────────────────────────────────────────────
+# MOCK = deterministic offline checks (default). LIVE = real API calls.
+GOV_ADAPTER_MODE=MOCK
+GSTINAPI_KEY=
+DATA_GOV_API_KEY=
+
+# ── Supabase Storage (optional) ───────────────────────────────────────────────
+# Without these, uploaded files are stored in backend/uploads/ locally.
+SUPABASE_URL=
+SUPABASE_SERVICE_ROLE_KEY=
+SUPABASE_STORAGE_BUCKET=documents
+
+# ── Rate limiting (multi-worker production) ───────────────────────────────────
+# Redis URI for shared rate-limit state across gunicorn workers.
+# Omit for single-worker or local dev.
+RATELIMIT_STORAGE_URI=
+
+# ── Flask environment ─────────────────────────────────────────────────────────
+# Set to 'production' on Render/Railway to enable SECRET_KEY enforcement
+# and block plaintext password fallback. Leave unset for local dev.
+FLASK_ENV=production
+
+# ── Demo user passwords (production seed only) ────────────────────────────────
+# Required by scripts/create_demo_users.py when FLASK_ENV=production.
+DEMO_OFFICER_PASS=
+DEMO_BIDDER_PASS=
+DEMO_BIDDER2_PASS=
+DEMO_CITIZEN_PASS=
+```
+
+> **Security note:** `.env` is gitignored. Never commit real credentials.
+> Only `.env.example` (with empty placeholders) is tracked.
+
+---
+
+## Security model
+
+| Feature | Implementation |
+|---|---|
+| Password hashing | bcrypt, 12 rounds. Legacy SHA-256 hashes are upgraded automatically on first login. |
+| Auth tokens | itsdangerous `URLSafeTimedSerializer` (HMAC-SHA1 signed, 12-hour TTL) |
+| Token storage | `localStorage` (known XSS trade-off; HttpOnly cookie migration is a future item) |
+| Token revocation | `revoked_tokens` PostgreSQL table — survives server restarts |
+| Login brute force | flask-limiter: 10 requests/minute per IP |
+| Rate limit storage | In-memory (dev) or Redis via `RATELIMIT_STORAGE_URI` (multi-worker) |
+| CORS | Explicit origin allowlist; no wildcard `*` |
+| Secret key | App refuses to start in production without `SECRET_KEY` or if set to the known dev fallback |
+| Plaintext passwords | Blocked in DB mode and when `FLASK_ENV=production` |
+| Admin destructive ops | Require `{"confirm": true}` in request body |
+
+---
+
+## Database tables (24 total)
+
+All 24 tables are created by `alembic upgrade head`. Key tables:
+
+| Table | Purpose |
+|---|---|
+| `users` | Authentication — UUID PK, bcrypt `password_hash` |
+| `tenders` | Tender lifecycle and policy configuration |
+| `bidders` | Bidder registrations linked to a tender |
+| `requirements` | Per-tender compliance requirements |
+| `bids` | Full bid lifecycle including financial data and verifications |
+| `documents` | Document metadata, OCR results, tampering signals |
+| `compliance_results` | Per-(bidder, requirement) compliance analysis results |
+| `contracts` | Awarded contracts and milestones |
+| `inspections` | Quality inspection records |
+| `corrective_actions` | Post-inspection corrective action orders |
+| `audit` | Append-only procurement audit trail |
+| `revoked_tokens` | Persistent token revocation (logout survives restarts) |
+| `conflict_declarations` | Officer conflict-of-interest declarations |
+| `eval_committees` | Technical evaluation committee and scores |
+| `grievances` | Grievance submissions and responses |
+| `notifications` | System notifications per user/role |
+| `rejection_feedback` | Rejection rationale sent to disqualified bidders |
+| `ai_overrides` | Officer overrides to AI recommendations |
+
+---
+
+## API overview
+
+All endpoints are under `/api`. Endpoints marked with 🔒 require
+`Authorization: Bearer <token>`.
+
+| Area | Endpoints |
+|------|----------|
+| Auth | `POST /api/auth/login` · `GET /api/auth/me` 🔒 · `POST /api/auth/logout` 🔒 · `POST /api/auth/change-password` 🔒 |
+| Health | `GET /api/health` |
+| Tenders | `GET/POST /api/tenders` 🔒 · `GET /api/tenders/<id>` 🔒 · extend · cancel · re-tender · corrigendum · pre-bid |
+| Bidders | `GET/POST /api/bidders` 🔒 · compliance · tampering · decisions · deletion |
+| Documents | `POST /api/documents/upload` 🔒 · view · download · reprocess · duplicate-check |
+| Bids | submit · withdraw · modify · versions · advance-stage · open-financial |
+| Evaluation | EMD verify · price analysis · preference verify · local-content verify · OEM verify · committee |
+| Contracts | CRUD · milestones · inspections · corrective actions · vendor profiles |
+| Compliance | `POST /api/bidders/<id>/analyze` 🔒 · `GET /api/bidders/<id>/compliance` 🔒 |
+| AI | `POST /api/ai/<type>/<id>/override` 🔒 · `POST /api/chat` 🔒 |
+| Grievances | submit · list · assign · respond |
+| Reports | bidder report · officer summary · Excel export |
+| Search | `GET /api/search?q=` 🔒 |
+| Public | `/api/public/tenders` · timelines · feedback · grievance stats |
+| Admin 🔒 | status · reset compliance · cleanup reports · cleanup expired tokens |
+
+---
+
+## Testing
+
+```powershell
+# Unit + integration tests (no running server needed)
+cd backend
+python -m pytest tests/test_sprint4.py tests/test_integration.py -v
+
+# Live smoke test (requires running backend at localhost:5000)
+python tests/smoke_test.py http://localhost:5000
+
+# Frontend production build check
+cd frontend
+npm run build
+```
+
+---
+
+## Deployment (Render + Vercel + Supabase)
+
+### Backend → Render
+
+| Setting | Value |
+|---|---|
+| Root directory | `backend` |
+| Build command | `pip install -r requirements.txt` |
+| Start command | `gunicorn app:app --workers 4 --bind 0.0.0.0:$PORT --timeout 120` |
+| Health check path | `/api/health` |
+
+Required environment variables on Render:
+
+```
+DATABASE_URL          postgresql://...?sslmode=require
+SECRET_KEY            <generate: python -c "import secrets; print(secrets.token_hex(32))">
+FLASK_ENV             production
+CORS_ORIGINS          https://your-app.vercel.app
+GROQ_API_KEY          gsk_...
+SUPABASE_URL          https://...supabase.co
+SUPABASE_SERVICE_ROLE_KEY  eyJ...
+RATELIMIT_STORAGE_URI redis://...   (recommended for multi-worker)
+```
+
+**Before first deploy, run in the Render shell:**
+```bash
+alembic upgrade head
+python scripts/create_demo_users.py
+```
+
+### Frontend → Vercel
+
+1. Connect your repository to a Vercel project.
+2. Set build output directory to `frontend/dist`.
+3. Build command: `cd frontend && npm run build`.
+4. Update `vercel.json` at the repo root — replace the backend URL placeholder:
+   ```json
+   {
+     "rewrites": [
+       { "source": "/api/:path*", "destination": "https://YOUR-APP.onrender.com/api/:path*" },
+       { "source": "/(.*)", "destination": "/index.html" }
+     ]
+   }
+   ```
+
+---
+
+## Troubleshooting
+
+**`[config] Database: PostgreSQL (Supabase)` even when pointing to localhost.**
+This is a cosmetic log label that fires whenever `DATABASE_URL` is set,
+regardless of the actual host. It does not indicate a Supabase connection.
+Check the hostname in your `DATABASE_URL`.
+
+**`"db_connected": false` on `/api/health`.**
+PostgreSQL is not reachable. Verify the host, port, database name and password
+in `backend/.env`. Run `psql -U postgres -d veritas_ai` to test connectivity.
+
+**Tables are missing after `alembic upgrade head`.**
+Confirm all 4 migrations applied: `python -m alembic current` should show
+`c9e4d3b2a156 (head)`. If it shows `6fd62e526b64`, the last 3 migrations did not
+run — check for errors in the alembic output.
+
+**Demo users cannot log in after PostgreSQL setup.**
+Run `python scripts/create_demo_users.py` to seed them. The script is idempotent.
+
+**Documents don't appear after upload.**
+Check the backend log. In local mode, files go to `backend/uploads/` and
+metadata to the `documents` table (or `backend/data/documents.json` in JSON mode).
+
+**OCR returns no text for images.**
+Install the Tesseract binary (Windows: https://github.com/UB-Mannheim/tesseract/wiki)
+and restart the backend. PDFs with a text layer work without Tesseract.
+
+**CORS errors in the browser.**
+Add your frontend origin to `CORS_ORIGINS` in `backend/.env` and restart.
+
+**Frontend port conflict.**
+Vite dev server runs on port 3000. Change it with `npm run dev -- --port 3001`.
+
+**`SECRET_KEY` fatal error on startup.**
+When `FLASK_ENV=production` the app exits if `SECRET_KEY` is missing or equals
+the known dev fallback. Set a strong value or unset `FLASK_ENV` for local dev.
+
+---
+
+## License
+
+MIT License.
+#   V e r i t a s - A I  
+ 
