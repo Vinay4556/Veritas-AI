@@ -1,1 +1,554 @@
-{}
+{
+  "BID-SUB-001": {
+    "bidder_id": "BID-SUB-001",
+    "tender_id": "GEM-DEMO-2026-001",
+    "overall_score": 80,
+    "risk_level": "MEDIUM",
+    "category_scores": {
+      "Legal": 95,
+      "Financial": 83,
+      "Technical": 65,
+      "Certifications": 28
+    },
+    "status_counts": {
+      "VERIFIED": 13,
+      "REVIEW": 2,
+      "NON_COMPLIANT": 0,
+      "MISSING": 5
+    },
+    "total_requirements": 20,
+    "requirements": {
+      "REQ-001": {
+        "status": "VERIFIED",
+        "confidence": 0.95,
+        "source_doc": "DOC-001-01",
+        "required_value": "Valid GST Registration",
+        "extracted_value": "GSTIN 27AABCA1234B1ZH, Maharashtra, Regular, Valid to 30-Jun-2027.",
+        "found_value": "27AABCA1234B1ZH (Active)"
+      },
+      "REQ-002": {
+        "status": "VERIFIED",
+        "confidence": 0.97,
+        "source_doc": "DOC-001-02",
+        "required_value": "Valid PAN Card",
+        "extracted_value": "PAN AABCA1234B, ABC Technologies Pvt Ltd, Status: Active.",
+        "found_value": "AABCA1234B (Active)"
+      },
+      "REQ-003": {
+        "status": "MISSING",
+        "confidence": 0.0,
+        "source_doc": null,
+        "required_value": "Udyam/MSME Registration (Optional)",
+        "extracted_value": null,
+        "found_value": "Not submitted"
+      },
+      "REQ-004": {
+        "status": "VERIFIED",
+        "confidence": 0.93,
+        "source_doc": "DOC-001-04",
+        "required_value": "Minimum Annual Turnover Rs 10 Crore",
+        "extracted_value": "Average Annual Turnover: Rs 14.80 Crore over FY2022-FY2024. Exceeds mandatory Rs 10 Crore threshold.",
+        "found_value": "Rs 14.80 Crore"
+      },
+      "REQ-005": {
+        "status": "VERIFIED",
+        "confidence": 0.91,
+        "source_doc": "DOC-001-05",
+        "required_value": "Minimum 5 years relevant experience",
+        "extracted_value": "11 years of IoT experience documented. 3 completed projects with government clients.",
+        "found_value": "11 years"
+      },
+      "REQ-006": {
+        "status": "REVIEW",
+        "confidence": 0.72,
+        "source_doc": "DOC-001-03",
+        "required_value": "ISO 9001:2015 Certification",
+        "extracted_value": "ISO 9001:2015 Cert TUV-IN-ISO-4521 by TUV SUD South Asia. Expiry: 14-Jan-2025.",
+        "found_value": "ISO 9001 (Expiry: 14-Jan-2025)",
+        "concern": "ISO 9001:2015 certificate expiry date (14-Jan-2025) may be in the past relative to tender submission date. A renewed certificate should be requested."
+      },
+      "REQ-007": {
+        "status": "VERIFIED",
+        "confidence": 0.89,
+        "source_doc": "DOC-001-06",
+        "required_value": "EPFO Registration",
+        "extracted_value": "EPFO Code MH/BAN/0012345, ABC Technologies Pvt Ltd, 85 employees covered, Active.",
+        "found_value": "MH/BAN/0012345 (Active)"
+      },
+      "REQ-008": {
+        "status": "VERIFIED",
+        "confidence": 0.85,
+        "source_doc": "DOC-001-07",
+        "required_value": "ESIC Registration",
+        "extracted_value": "ESIC Code 31000123456, ABC Tech Pvt Ltd, 85 employees, Active.",
+        "found_value": "ESIC 31000123456 (Active)"
+      },
+      "REQ-009": {
+        "status": "REVIEW",
+        "confidence": 0.89,
+        "source_doc": "DOC-001-08",
+        "required_value": "OEM Authorization Letter",
+        "extracted_value": "OEM Authorization from SenseNet Technologies B.V. for IoT Monitoring Equipment, valid to Mar-2027.",
+        "found_value": "OEM Auth (entity mismatch)",
+        "concern": "OEM Authorization letter names authorized entity as 'ABC Technology Solutions Pvt Ltd' vs bidder legal name 'ABC Technologies Pvt Ltd'. Clarification pending (see CLR-004)."
+      },
+      "REQ-010": {
+        "status": "VERIFIED",
+        "confidence": 0.94,
+        "source_doc": "DOC-001-09",
+        "required_value": "Make in India Declaration",
+        "extracted_value": "Make in India declaration: 55% local content, Class II Local Supplier.",
+        "found_value": "55% Local Content (Class II)"
+      },
+      "REQ-011": {
+        "status": "VERIFIED",
+        "confidence": 0.94,
+        "source_doc": "DOC-001-09",
+        "required_value": "Non-Blacklisting Declaration",
+        "extracted_value": "Company declares it is not blacklisted or debarred by any Central/State Government or PSU.",
+        "found_value": "Not Blacklisted (Declared)"
+      },
+      "REQ-012": {
+        "status": "VERIFIED",
+        "confidence": 0.91,
+        "source_doc": "DOC-001-05",
+        "required_value": "Minimum 3 Similar Projects >= Rs 1 Crore",
+        "extracted_value": "3 completed IoT projects >= Rs 1 Crore: MIDHANI (Rs 2.1Cr), BHEL (Rs 1.8Cr), HAL (Rs 3.2Cr).",
+        "found_value": "3 qualifying projects found"
+      },
+      "REQ-013": {
+        "status": "REVIEW",
+        "confidence": 0.75,
+        "source_doc": "DOC-001-04",
+        "required_value": "Bank Solvency Certificate",
+        "extracted_value": "Financial statement shows net worth Rs 8.2 Crore. No dedicated bank solvency certificate submitted.",
+        "found_value": "Financial statement submitted (solvency not formally certified)",
+        "concern": "No dedicated bank solvency certificate submitted. Financial statement partially demonstrates solvency but a formal bank solvency certificate is required."
+      },
+      "REQ-014": {
+        "status": "MISSING",
+        "confidence": 0.0,
+        "source_doc": null,
+        "required_value": "BIS/CE Certification for Equipment",
+        "extracted_value": null,
+        "found_value": "Not submitted"
+      },
+      "REQ-015": {
+        "status": "MISSING",
+        "confidence": 0.0,
+        "source_doc": null,
+        "required_value": "ISO 27001 Information Security (Optional)",
+        "extracted_value": null,
+        "found_value": "Not submitted"
+      },
+      "REQ-016": {
+        "status": "VERIFIED",
+        "confidence": 0.91,
+        "source_doc": "DOC-001-05",
+        "required_value": "Technical Manpower >= 20 qualified personnel",
+        "extracted_value": "85 employees covered under EPFO, with qualified IoT engineers documented in experience certificate.",
+        "found_value": "85 technical personnel"
+      },
+      "REQ-017": {
+        "status": "VERIFIED",
+        "confidence": 0.95,
+        "source_doc": "DOC-001-10",
+        "required_value": "Registered Office in India",
+        "extracted_value": "CIN U72200MH2009PTC195432, Incorporated 15-Mar-2009, ROC Mumbai, Maharashtra.",
+        "found_value": "Mumbai, Maharashtra"
+      },
+      "REQ-018": {
+        "status": "MISSING",
+        "confidence": 0.0,
+        "source_doc": null,
+        "required_value": "AMC Capability Documentation (Optional)",
+        "extracted_value": null,
+        "found_value": "Not submitted"
+      },
+      "REQ-019": {
+        "status": "VERIFIED",
+        "confidence": 0.94,
+        "source_doc": null,
+        "required_value": "Bid Security/EMD Rs 24 Lakhs",
+        "extracted_value": "EMD of Rs 24,00,000 submitted via Bank Guarantee BG/HDFC/2026/ABC/0892. Status: VERIFIED on bid record.",
+        "found_value": "Rs 24,00,000 (VERIFIED)"
+      },
+      "REQ-020": {
+        "status": "MISSING",
+        "confidence": 0.0,
+        "source_doc": null,
+        "required_value": "NABL Accredited Testing Report (Optional)",
+        "extracted_value": null,
+        "found_value": "Not submitted"
+      }
+    },
+    "analyzed_at": "2026-08-23T10:00:00"
+  },
+  "BID-SUB-002": {
+    "bidder_id": "BID-SUB-002",
+    "tender_id": "GEM-DEMO-2026-001",
+    "overall_score": 20,
+    "risk_level": "HIGH",
+    "category_scores": {
+      "Legal": 41,
+      "Financial": 17,
+      "Technical": 0,
+      "Certifications": 0
+    },
+    "status_counts": {
+      "VERIFIED": 3,
+      "REVIEW": 1,
+      "NON_COMPLIANT": 1,
+      "MISSING": 15
+    },
+    "total_requirements": 20,
+    "requirements": {
+      "REQ-001": {
+        "status": "VERIFIED",
+        "confidence": 0.94,
+        "source_doc": "DOC-002-01",
+        "required_value": "Valid GST Registration",
+        "extracted_value": "GSTIN 07AABCB5678C1ZS, Delhi, Regular, Valid to 31-Mar-2028.",
+        "found_value": "07AABCB5678C1ZS (Active)"
+      },
+      "REQ-002": {
+        "status": "VERIFIED",
+        "confidence": 0.96,
+        "source_doc": "DOC-002-02",
+        "required_value": "Valid PAN Card",
+        "extracted_value": "PAN AABCB5678C, Bharat Industrial Systems Pvt Ltd, Status: Active.",
+        "found_value": "AABCB5678C (Active)"
+      },
+      "REQ-003": {
+        "status": "MISSING",
+        "confidence": 0.0,
+        "source_doc": null,
+        "required_value": "Udyam/MSME Registration (Optional)",
+        "extracted_value": null,
+        "found_value": "Not submitted"
+      },
+      "REQ-004": {
+        "status": "NON_COMPLIANT",
+        "confidence": 0.90,
+        "source_doc": "DOC-002-03",
+        "required_value": "Minimum Annual Turnover Rs 10 Crore",
+        "extracted_value": "Average Annual Turnover: Rs 6.20 Crore over FY2022-FY2024. Below mandatory threshold of Rs 10 Crore.",
+        "found_value": "Rs 6.20 Crore",
+        "reason": "Turnover Rs 6.20 Crore is below the mandatory Rs 10 Crore threshold. Bidder does not meet the minimum financial eligibility criterion."
+      },
+      "REQ-005": {
+        "status": "MISSING",
+        "confidence": 0.0,
+        "source_doc": null,
+        "required_value": "Minimum 5 years relevant experience",
+        "extracted_value": null,
+        "found_value": "Not submitted"
+      },
+      "REQ-006": {
+        "status": "MISSING",
+        "confidence": 0.0,
+        "source_doc": null,
+        "required_value": "ISO 9001:2015 Certification",
+        "extracted_value": null,
+        "found_value": "Not submitted"
+      },
+      "REQ-007": {
+        "status": "MISSING",
+        "confidence": 0.0,
+        "source_doc": null,
+        "required_value": "EPFO Registration",
+        "extracted_value": null,
+        "found_value": "Not submitted"
+      },
+      "REQ-008": {
+        "status": "MISSING",
+        "confidence": 0.0,
+        "source_doc": null,
+        "required_value": "ESIC Registration",
+        "extracted_value": null,
+        "found_value": "Not submitted"
+      },
+      "REQ-009": {
+        "status": "MISSING",
+        "confidence": 0.0,
+        "source_doc": null,
+        "required_value": "OEM Authorization Letter",
+        "extracted_value": null,
+        "found_value": "Not submitted"
+      },
+      "REQ-010": {
+        "status": "MISSING",
+        "confidence": 0.0,
+        "source_doc": null,
+        "required_value": "Make in India Declaration",
+        "extracted_value": null,
+        "found_value": "Not submitted"
+      },
+      "REQ-011": {
+        "status": "MISSING",
+        "confidence": 0.0,
+        "source_doc": null,
+        "required_value": "Non-Blacklisting Declaration",
+        "extracted_value": null,
+        "found_value": "Not submitted"
+      },
+      "REQ-012": {
+        "status": "MISSING",
+        "confidence": 0.0,
+        "source_doc": null,
+        "required_value": "Minimum 3 Similar Projects >= Rs 1 Crore",
+        "extracted_value": null,
+        "found_value": "Not submitted"
+      },
+      "REQ-013": {
+        "status": "MISSING",
+        "confidence": 0.0,
+        "source_doc": null,
+        "required_value": "Bank Solvency Certificate",
+        "extracted_value": null,
+        "found_value": "Not submitted"
+      },
+      "REQ-014": {
+        "status": "MISSING",
+        "confidence": 0.0,
+        "source_doc": null,
+        "required_value": "BIS/CE Certification for Equipment",
+        "extracted_value": null,
+        "found_value": "Not submitted"
+      },
+      "REQ-015": {
+        "status": "MISSING",
+        "confidence": 0.0,
+        "source_doc": null,
+        "required_value": "ISO 27001 Information Security (Optional)",
+        "extracted_value": null,
+        "found_value": "Not submitted"
+      },
+      "REQ-016": {
+        "status": "MISSING",
+        "confidence": 0.0,
+        "source_doc": null,
+        "required_value": "Technical Manpower >= 20 qualified personnel",
+        "extracted_value": null,
+        "found_value": "Not submitted"
+      },
+      "REQ-017": {
+        "status": "VERIFIED",
+        "confidence": 0.94,
+        "source_doc": "DOC-002-01",
+        "required_value": "Registered Office in India",
+        "extracted_value": "GST registration confirms Delhi registered office.",
+        "found_value": "New Delhi, Delhi"
+      },
+      "REQ-018": {
+        "status": "MISSING",
+        "confidence": 0.0,
+        "source_doc": null,
+        "required_value": "AMC Capability Documentation (Optional)",
+        "extracted_value": null,
+        "found_value": "Not submitted"
+      },
+      "REQ-019": {
+        "status": "REVIEW",
+        "confidence": 0.60,
+        "source_doc": null,
+        "required_value": "Bid Security/EMD Rs 24 Lakhs",
+        "extracted_value": "EMD of Rs 15,00,000 submitted via Demand Draft DD/SBI/2026/BIS/0341. Required amount: Rs 24,00,000.",
+        "found_value": "Rs 15,00,000 (SHORT by Rs 9,00,000)",
+        "concern": "EMD amount of Rs 15,00,000 submitted is short of required Rs 24,00,000 by Rs 9,00,000. EMD status: MISMATCH. Grievance GRV-2026-001 filed by bidder."
+      },
+      "REQ-020": {
+        "status": "MISSING",
+        "confidence": 0.0,
+        "source_doc": null,
+        "required_value": "NABL Accredited Testing Report (Optional)",
+        "extracted_value": null,
+        "found_value": "Not submitted"
+      }
+    },
+    "analyzed_at": "2026-08-23T11:30:00"
+  },
+  "BID-SUB-003": {
+    "bidder_id": "BID-SUB-003",
+    "tender_id": "GEM-DEMO-2026-001",
+    "overall_score": 87,
+    "risk_level": "LOW",
+    "category_scores": {
+      "Legal": 100,
+      "Financial": 100,
+      "Technical": 74,
+      "Certifications": 50
+    },
+    "status_counts": {
+      "VERIFIED": 16,
+      "REVIEW": 1,
+      "NON_COMPLIANT": 0,
+      "MISSING": 3
+    },
+    "total_requirements": 20,
+    "requirements": {
+      "REQ-001": {
+        "status": "VERIFIED",
+        "confidence": 0.97,
+        "source_doc": "DOC-003-01",
+        "required_value": "Valid GST Registration",
+        "extracted_value": "GSTIN 29AABCN9012D1ZO, Karnataka, Regular, Valid to 30-Jun-2027.",
+        "found_value": "29AABCN9012D1ZO (Active)"
+      },
+      "REQ-002": {
+        "status": "VERIFIED",
+        "confidence": 0.98,
+        "source_doc": "DOC-003-02",
+        "required_value": "Valid PAN Card",
+        "extracted_value": "PAN AABCN9012D, Nova Engineering Solutions Pvt Ltd, Status: Active.",
+        "found_value": "AABCN9012D (Active)"
+      },
+      "REQ-003": {
+        "status": "VERIFIED",
+        "confidence": 0.96,
+        "source_doc": "DOC-003-12",
+        "required_value": "Udyam/MSME Registration (Optional)",
+        "extracted_value": "Udyam Registration No UDYAM-KA-08-0091234, Medium Enterprise, Karnataka, Registered 01-Jul-2020.",
+        "found_value": "UDYAM-KA-08-0091234 (Medium Enterprise)"
+      },
+      "REQ-004": {
+        "status": "VERIFIED",
+        "confidence": 0.95,
+        "source_doc": "DOC-003-04",
+        "required_value": "Minimum Annual Turnover Rs 10 Crore",
+        "extracted_value": "Average Annual Turnover: Rs 18.77 Crore over FY2022-FY2024. Substantially above Rs 10 Crore threshold.",
+        "found_value": "Rs 18.77 Crore"
+      },
+      "REQ-005": {
+        "status": "VERIFIED",
+        "confidence": 0.94,
+        "source_doc": "DOC-003-05",
+        "required_value": "Minimum 5 years relevant experience",
+        "extracted_value": "12 years of IoT experience. 4 completed government projects.",
+        "found_value": "12 years"
+      },
+      "REQ-006": {
+        "status": "REVIEW",
+        "confidence": 0.88,
+        "source_doc": "DOC-003-03",
+        "required_value": "ISO 9001:2015 Certification",
+        "extracted_value": "ISO 9001:2015 Cert BV-IN-QMS-7823 by Bureau Veritas. Expiry: 09-Feb-2027.",
+        "found_value": "ISO 9001 (minor name variation, valid to Feb-2027)",
+        "concern": "ISO 9001 certificate uses full legal form 'Nova Engineering Solutions Private Limited' while other documents use 'Nova Engineering Solutions Pvt Ltd'. Minor name variation noted. Certificate expiry (09-Feb-2027) is valid."
+      },
+      "REQ-007": {
+        "status": "VERIFIED",
+        "confidence": 0.97,
+        "source_doc": "DOC-003-06",
+        "required_value": "EPFO Registration",
+        "extracted_value": "EPFO Code KA/BAN/0045678, Nova Engineering Solutions Pvt Ltd, 142 employees covered, Active.",
+        "found_value": "KA/BAN/0045678 (Active, 142 employees)"
+      },
+      "REQ-008": {
+        "status": "VERIFIED",
+        "confidence": 0.95,
+        "source_doc": "DOC-003-07",
+        "required_value": "ESIC Registration",
+        "extracted_value": "ESIC Code 53000234567, Nova Engineering Solutions Pvt Ltd, 142 employees, Active.",
+        "found_value": "53000234567 (Active)"
+      },
+      "REQ-009": {
+        "status": "VERIFIED",
+        "confidence": 0.93,
+        "source_doc": "DOC-003-08",
+        "required_value": "OEM Authorization Letter",
+        "extracted_value": "OEM Authorization from SenseNet Technologies B.V. for Industrial IoT Monitoring Equipment, valid to Mar-2027.",
+        "found_value": "SenseNet Technologies B.V. Auth (Valid to Mar-2027)"
+      },
+      "REQ-010": {
+        "status": "VERIFIED",
+        "confidence": 0.96,
+        "source_doc": "DOC-003-09",
+        "required_value": "Make in India Declaration",
+        "extracted_value": "Make in India declaration: 68% local content, Class I Local Supplier.",
+        "found_value": "68% Local Content (Class I)"
+      },
+      "REQ-011": {
+        "status": "VERIFIED",
+        "confidence": 0.96,
+        "source_doc": "DOC-003-09",
+        "required_value": "Non-Blacklisting Declaration",
+        "extracted_value": "Company declares it is not blacklisted or debarred by any Central/State Government or PSU.",
+        "found_value": "Not Blacklisted (Declared)"
+      },
+      "REQ-012": {
+        "status": "VERIFIED",
+        "confidence": 0.95,
+        "source_doc": "DOC-003-05",
+        "required_value": "Minimum 3 Similar Projects >= Rs 1 Crore",
+        "extracted_value": "4 IoT projects >= Rs 1 Crore: ISRO (Rs 5.2Cr), DRDO (Rs 3.8Cr), KPCL (Rs 2.6Cr), Wipro (Rs 1.9Cr).",
+        "found_value": "4 qualifying projects"
+      },
+      "REQ-013": {
+        "status": "VERIFIED",
+        "confidence": 0.92,
+        "source_doc": "DOC-003-04",
+        "required_value": "Bank Solvency Certificate",
+        "extracted_value": "Financial statement demonstrates strong net worth of Rs 12.5 Crore with consistent revenue growth. Solvency position confirmed from audited financials.",
+        "found_value": "Net Worth Rs 12.5 Crore (Solvency confirmed)"
+      },
+      "REQ-014": {
+        "status": "MISSING",
+        "confidence": 0.0,
+        "source_doc": null,
+        "required_value": "BIS/CE Certification for Equipment",
+        "extracted_value": null,
+        "found_value": "Not submitted"
+      },
+      "REQ-015": {
+        "status": "VERIFIED",
+        "confidence": 0.94,
+        "source_doc": "DOC-003-11",
+        "required_value": "ISO 27001 Information Security (Optional)",
+        "extracted_value": "ISO 27001:2013 Cert BSI-IN-ISMS-3421 by BSI Group India. Expiry: 30-Jun-2026.",
+        "found_value": "ISO 27001:2013 (Valid to Jun-2026)"
+      },
+      "REQ-016": {
+        "status": "VERIFIED",
+        "confidence": 0.98,
+        "source_doc": "DOC-003-06",
+        "required_value": "Technical Manpower >= 20 qualified personnel",
+        "extracted_value": "142 employees covered under EPFO. Adequate technical manpower confirmed.",
+        "found_value": "142 technical personnel"
+      },
+      "REQ-017": {
+        "status": "VERIFIED",
+        "confidence": 0.97,
+        "source_doc": "DOC-003-10",
+        "required_value": "Registered Office in India",
+        "extracted_value": "CIN U29130KA2007PTC091234, Incorporated 18-Jan-2007, ROC Bangalore, Karnataka.",
+        "found_value": "Bangalore, Karnataka"
+      },
+      "REQ-018": {
+        "status": "MISSING",
+        "confidence": 0.0,
+        "source_doc": null,
+        "required_value": "AMC Capability Documentation (Optional)",
+        "extracted_value": null,
+        "found_value": "Not submitted"
+      },
+      "REQ-019": {
+        "status": "VERIFIED",
+        "confidence": 0.97,
+        "source_doc": null,
+        "required_value": "Bid Security/EMD Rs 24 Lakhs",
+        "extracted_value": "Bank Guarantee for Rs 24,00,000 submitted via BG/KNB/2026/NOVA/0456 from Kotak Mahindra Bank. Status: VERIFIED on bid record.",
+        "found_value": "Rs 24,00,000 (VERIFIED)"
+      },
+      "REQ-020": {
+        "status": "MISSING",
+        "confidence": 0.0,
+        "source_doc": null,
+        "required_value": "NABL Accredited Testing Report (Optional)",
+        "extracted_value": null,
+        "found_value": "Not submitted"
+      }
+    },
+    "analyzed_at": "2026-08-23T12:00:00"
+  }
+}

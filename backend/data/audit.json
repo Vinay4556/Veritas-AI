@@ -1,322 +1,344 @@
 [
   {
-    "id": "AUD-001",
-    "timestamp": "2026-08-20T10:28:00",
-    "actor": "System",
-    "action": "Tender Created",
-    "detail": "Tender GEM-DEMO-2026-001 uploaded and registered",
+    "id": "AUD-2026-001",
+    "timestamp": "2026-08-10T09:00:00",
+    "actor": "Rajesh Kumar",
+    "actor_id": "USR-001",
+    "actor_role": "OFFICER",
+    "action": "TENDER_CREATED",
+    "entity_type": "TENDER",
+    "entity_id": "GEM-DEMO-2026-001",
     "tender_id": "GEM-DEMO-2026-001",
-    "bidder_id": null,
-    "severity": "info"
+    "description": "Tender GEM-DEMO-2026-001 created: Supply and Installation of Industrial IoT Monitoring Equipment. Estimated value: Rs 4.8 Crore.",
+    "severity": "info",
+    "metadata": {
+      "tender_name": "Supply and Installation of Industrial IoT Monitoring Equipment",
+      "estimated_value": "Rs 4.8 Crore",
+      "submission_deadline": "2026-08-22T17:00:00"
+    }
   },
   {
-    "id": "AUD-002",
-    "timestamp": "2026-08-20T10:29:00",
-    "actor": "AI Engine",
-    "action": "Requirements Extracted",
-    "detail": "20 requirements extracted from tender document GEM-DEMO-2026-001",
+    "id": "AUD-2026-002",
+    "timestamp": "2026-08-10T09:30:00",
+    "actor": "Rajesh Kumar",
+    "actor_id": "USR-001",
+    "actor_role": "OFFICER",
+    "action": "REQUIREMENTS_PUBLISHED",
+    "entity_type": "TENDER",
+    "entity_id": "GEM-DEMO-2026-001",
     "tender_id": "GEM-DEMO-2026-001",
-    "bidder_id": null,
-    "severity": "info"
+    "description": "20 compliance requirements published for tender GEM-DEMO-2026-001. 16 mandatory, 4 optional.",
+    "severity": "info",
+    "metadata": {
+      "mandatory_count": 16,
+      "optional_count": 4,
+      "total_weight": 88
+    }
   },
   {
-    "id": "AUD-003",
-    "timestamp": "2026-08-20T10:31:00",
-    "actor": "Officer",
-    "action": "Bidder Documents Uploaded",
-    "detail": "10 documents uploaded for ABC Technologies Pvt Ltd",
+    "id": "AUD-2026-003",
+    "timestamp": "2026-08-15T11:30:00",
+    "actor": "Rajesh Kumar",
+    "actor_id": "USR-001",
+    "actor_role": "OFFICER",
+    "action": "CORRIGENDUM_ISSUED",
+    "entity_type": "TENDER",
+    "entity_id": "GEM-DEMO-2026-001",
     "tender_id": "GEM-DEMO-2026-001",
-    "bidder_id": "BID-001",
-    "severity": "info"
+    "description": "Corrigendum #1 issued for GEM-DEMO-2026-001: Clarification on ISO 9001 scope requirements — certification must cover supply and installation of IoT monitoring systems.",
+    "severity": "info",
+    "metadata": {
+      "corrigendum_number": 1,
+      "subject": "ISO 9001 scope clarification",
+      "notified_bidders": true
+    }
   },
   {
-    "id": "AUD-004",
-    "timestamp": "2026-08-20T10:32:00",
-    "actor": "AI Engine",
-    "action": "Document Classification Completed",
-    "detail": "All 10 documents classified with high confidence for ABC Technologies",
+    "id": "AUD-2026-004",
+    "timestamp": "2026-08-20T10:30:00",
+    "actor": "Veritas AI Engine",
+    "actor_id": "SYSTEM",
+    "actor_role": "SYSTEM",
+    "action": "BIDDER_REGISTERED",
+    "entity_type": "BIDDER",
+    "entity_id": "BID-SUB-001",
     "tender_id": "GEM-DEMO-2026-001",
-    "bidder_id": "BID-001",
-    "severity": "info"
+    "description": "BID-SUB-001 — ABC Technologies Pvt Ltd registered for tender GEM-DEMO-2026-001. Contact: Amit Shah, procurement@abctech.in.",
+    "severity": "info",
+    "metadata": {
+      "bidder_name": "ABC Technologies Pvt Ltd",
+      "gstin": "27AABCA1234B1ZH",
+      "state": "Maharashtra"
+    }
   },
   {
-    "id": "AUD-005",
-    "timestamp": "2026-08-20T10:35:00",
-    "actor": "AI Engine",
-    "action": "Text Extraction Completed",
-    "detail": "Text extracted from 10/10 documents. 0 documents required OCR.",
+    "id": "AUD-2026-005",
+    "timestamp": "2026-08-20T11:50:00",
+    "actor": "ABC Technologies",
+    "actor_id": "bidder@demo.com",
+    "actor_role": "BIDDER",
+    "action": "DOCUMENTS_UPLOADED",
+    "entity_type": "BID",
+    "entity_id": "BID-SUB-001",
     "tender_id": "GEM-DEMO-2026-001",
-    "bidder_id": "BID-001",
-    "severity": "info"
+    "description": "10 documents uploaded by bidder@demo.com for BID-SUB-001 (ABC Technologies Pvt Ltd): GST, PAN, ISO9001, Financial Statement, Experience Certificate, EPFO, ESIC, OEM Authorization, Make in India Declaration, Certificate of Incorporation.",
+    "severity": "info",
+    "metadata": {
+      "document_count": 10,
+      "document_ids": [
+        "DOC-001-01", "DOC-001-02", "DOC-001-03", "DOC-001-04", "DOC-001-05",
+        "DOC-001-06", "DOC-001-07", "DOC-001-08", "DOC-001-09", "DOC-001-10"
+      ]
+    }
   },
   {
-    "id": "AUD-006",
-    "timestamp": "2026-08-20T10:40:00",
-    "actor": "AI Engine",
-    "action": "Compliance Analysis Completed",
-    "detail": "Compliance analysis completed for ABC Technologies. Score: 87%. Risk: MEDIUM.",
+    "id": "AUD-2026-006",
+    "timestamp": "2026-08-21T14:15:00",
+    "actor": "Veritas AI Engine",
+    "actor_id": "SYSTEM",
+    "actor_role": "SYSTEM",
+    "action": "BIDDER_REGISTERED",
+    "entity_type": "BIDDER",
+    "entity_id": "BID-SUB-002",
     "tender_id": "GEM-DEMO-2026-001",
-    "bidder_id": "BID-001",
-    "severity": "warning"
+    "description": "BID-SUB-002 — Bharat Industrial Systems Pvt Ltd registered for tender GEM-DEMO-2026-001. Contact: Priya Nair, bids@bharatindustrial.in.",
+    "severity": "info",
+    "metadata": {
+      "bidder_name": "Bharat Industrial Systems Pvt Ltd",
+      "gstin": "07AABCB5678C1ZS",
+      "state": "Delhi"
+    }
   },
   {
-    "id": "AUD-007",
-    "timestamp": "2026-08-20T10:42:00",
-    "actor": "AI Engine",
-    "action": "Cross-Document Inconsistency Detected",
-    "detail": "Name mismatch between GST and OEM Authorization for ABC Technologies Pvt Ltd",
+    "id": "AUD-2026-007",
+    "timestamp": "2026-08-21T14:50:00",
+    "actor": "Bharat Industrial",
+    "actor_id": "bidder2@demo.com",
+    "actor_role": "BIDDER",
+    "action": "DOCUMENTS_UPLOADED",
+    "entity_type": "BID",
+    "entity_id": "BID-SUB-002",
     "tender_id": "GEM-DEMO-2026-001",
-    "bidder_id": "BID-001",
-    "severity": "warning"
+    "description": "3 documents uploaded by bidder2@demo.com for BID-SUB-002 (Bharat Industrial Systems Pvt Ltd): GST Certificate, PAN Card, Financial Statement.",
+    "severity": "info",
+    "metadata": {
+      "document_count": 3,
+      "document_ids": ["DOC-002-01", "DOC-002-02", "DOC-002-03"]
+    }
   },
   {
-    "id": "AUD-008",
-    "timestamp": "2026-08-21T14:16:00",
-    "actor": "Officer",
-    "action": "Bidder Documents Uploaded",
-    "detail": "6 documents uploaded for Bharat Industrial Systems Pvt Ltd",
+    "id": "AUD-2026-008",
+    "timestamp": "2026-08-22T09:00:00",
+    "actor": "Veritas AI Engine",
+    "actor_id": "SYSTEM",
+    "actor_role": "SYSTEM",
+    "action": "BIDDER_REGISTERED",
+    "entity_type": "BIDDER",
+    "entity_id": "BID-SUB-003",
     "tender_id": "GEM-DEMO-2026-001",
-    "bidder_id": "BID-002",
-    "severity": "info"
+    "description": "BID-SUB-003 — Nova Engineering Solutions Pvt Ltd registered for tender GEM-DEMO-2026-001. Contact: Suresh Menon, tenders@novaengineering.co.in.",
+    "severity": "info",
+    "metadata": {
+      "bidder_name": "Nova Engineering Solutions Pvt Ltd",
+      "gstin": "29AABCN9012D1ZO",
+      "state": "Karnataka"
+    }
   },
   {
-    "id": "AUD-009",
-    "timestamp": "2026-08-21T14:30:00",
-    "actor": "AI Engine",
-    "action": "Compliance Analysis Completed",
-    "detail": "Compliance analysis completed for Bharat Industrial. Score: 61%. Risk: HIGH.",
+    "id": "AUD-2026-009",
+    "timestamp": "2026-08-22T10:30:00",
+    "actor": "Nova Engineering",
+    "actor_id": "tenders@novaengineering.co.in",
+    "actor_role": "BIDDER",
+    "action": "DOCUMENTS_UPLOADED",
+    "entity_type": "BID",
+    "entity_id": "BID-SUB-003",
     "tender_id": "GEM-DEMO-2026-001",
-    "bidder_id": "BID-002",
-    "severity": "error"
+    "description": "12 documents uploaded for BID-SUB-003 (Nova Engineering Solutions Pvt Ltd): GST, PAN, ISO9001, Financial Statement, Experience Certificate, EPFO, ESIC, OEM Authorization, Declaration, Incorporation, ISO27001, Udyam Registration.",
+    "severity": "info",
+    "metadata": {
+      "document_count": 12,
+      "document_ids": [
+        "DOC-003-01", "DOC-003-02", "DOC-003-03", "DOC-003-04",
+        "DOC-003-05", "DOC-003-06", "DOC-003-07", "DOC-003-08",
+        "DOC-003-09", "DOC-003-10", "DOC-003-11", "DOC-003-12"
+      ]
+    }
   },
   {
-    "id": "AUD-010",
-    "timestamp": "2026-08-21T14:32:00",
-    "actor": "AI Engine",
-    "action": "Critical Issue Detected",
-    "detail": "Bharat Industrial - Financial turnover ₹6.2 Crore is below mandatory threshold of ₹10 Crore",
+    "id": "AUD-2026-010",
+    "timestamp": "2026-08-22T14:00:00",
+    "actor": "Veritas AI Engine",
+    "actor_id": "SYSTEM",
+    "actor_role": "SYSTEM",
+    "action": "TAMPERING_ALERT",
+    "entity_type": "DOCUMENT",
+    "entity_id": "DOC-002-03",
     "tender_id": "GEM-DEMO-2026-001",
-    "bidder_id": "BID-002",
-    "severity": "error"
+    "description": "Document metadata inconsistency detected in BID-SUB-002 financial statement (DOC-002-03). PDF creation timestamp postdates the financial period. Manual review recommended before evaluation.",
+    "severity": "warning",
+    "metadata": {
+      "bidder_id": "BID-SUB-002",
+      "document_id": "DOC-002-03",
+      "anomaly_type": "metadata_timestamp_inconsistency",
+      "confidence": 0.73
+    }
   },
   {
-    "id": "AUD-011",
-    "timestamp": "2026-08-22T09:01:00",
-    "actor": "Officer",
-    "action": "Bidder Documents Uploaded",
-    "detail": "11 documents uploaded for Nova Engineering Solutions Pvt Ltd",
+    "id": "AUD-2026-011",
+    "timestamp": "2026-08-23T10:00:00",
+    "actor": "Veritas AI Engine",
+    "actor_id": "SYSTEM",
+    "actor_role": "SYSTEM",
+    "action": "COMPLIANCE_ANALYZED",
+    "entity_type": "BID",
+    "entity_id": "BID-SUB-001",
     "tender_id": "GEM-DEMO-2026-001",
-    "bidder_id": "BID-003",
-    "severity": "info"
+    "description": "Compliance analysis complete for BID-SUB-001 (ABC Technologies Pvt Ltd). Score: 80, Risk: MEDIUM. 13 VERIFIED, 2 REVIEW, 0 NON_COMPLIANT, 5 MISSING.",
+    "severity": "info",
+    "metadata": {
+      "score": 80,
+      "risk": "MEDIUM",
+      "verified": 13,
+      "review": 2,
+      "non_compliant": 0,
+      "missing": 5
+    }
   },
   {
-    "id": "AUD-012",
-    "timestamp": "2026-08-22T09:20:00",
-    "actor": "AI Engine",
-    "action": "Compliance Analysis Completed",
-    "detail": "Compliance analysis completed for Nova Engineering. Score: 91%. Risk: LOW.",
+    "id": "AUD-2026-012",
+    "timestamp": "2026-08-23T11:30:00",
+    "actor": "Veritas AI Engine",
+    "actor_id": "SYSTEM",
+    "actor_role": "SYSTEM",
+    "action": "COMPLIANCE_ANALYZED",
+    "entity_type": "BID",
+    "entity_id": "BID-SUB-002",
     "tender_id": "GEM-DEMO-2026-001",
-    "bidder_id": "BID-003",
-    "severity": "info"
+    "description": "Compliance analysis complete for BID-SUB-002 (Bharat Industrial Systems Pvt Ltd). Score: 20, Risk: HIGH. 3 VERIFIED, 1 REVIEW, 1 NON_COMPLIANT, 15 MISSING.",
+    "severity": "warning",
+    "metadata": {
+      "score": 20,
+      "risk": "HIGH",
+      "verified": 3,
+      "review": 1,
+      "non_compliant": 1,
+      "missing": 15
+    }
   },
   {
-    "id": "AUD-013",
-    "timestamp": "2026-08-22T09:22:00",
-    "actor": "AI Engine",
-    "action": "Document Inconsistency Flagged",
-    "detail": "Nova Engineering - ISO 9001 certificate entity name variation detected (minor)",
+    "id": "AUD-2026-013",
+    "timestamp": "2026-08-23T12:00:00",
+    "actor": "Veritas AI Engine",
+    "actor_id": "SYSTEM",
+    "actor_role": "SYSTEM",
+    "action": "COMPLIANCE_ANALYZED",
+    "entity_type": "BID",
+    "entity_id": "BID-SUB-003",
     "tender_id": "GEM-DEMO-2026-001",
-    "bidder_id": "BID-003",
-    "severity": "warning"
+    "description": "Compliance analysis complete for BID-SUB-003 (Nova Engineering Solutions Pvt Ltd). Score: 87, Risk: LOW. 16 VERIFIED, 1 REVIEW, 0 NON_COMPLIANT, 3 MISSING.",
+    "severity": "info",
+    "metadata": {
+      "score": 87,
+      "risk": "LOW",
+      "verified": 16,
+      "review": 1,
+      "non_compliant": 0,
+      "missing": 3
+    }
   },
   {
-    "id": "AUD-014",
+    "id": "AUD-2026-014",
+    "timestamp": "2026-08-23T14:00:00",
+    "actor": "Rajesh Kumar",
+    "actor_id": "USR-001",
+    "actor_role": "OFFICER",
+    "action": "CLARIFICATION_SENT",
+    "entity_type": "CLARIFICATION",
+    "entity_id": "CLR-004",
+    "tender_id": "GEM-DEMO-2026-001",
+    "description": "Clarification CLR-004 sent to BID-SUB-001 (ABC Technologies): OEM authorization entity name discrepancy — 'ABC Technology Solutions Pvt Ltd' vs 'ABC Technologies Pvt Ltd'. Awaiting bidder response.",
+    "severity": "warning",
+    "metadata": {
+      "clarification_id": "CLR-004",
+      "bidder_id": "BID-SUB-001",
+      "requirement_id": "REQ-009",
+      "severity": "HIGH"
+    }
+  },
+  {
+    "id": "AUD-2026-015",
+    "timestamp": "2026-08-24T16:00:00",
+    "actor": "Rajesh Kumar",
+    "actor_id": "USR-001",
+    "actor_role": "OFFICER",
+    "action": "CLARIFICATION_RESPONDED",
+    "entity_type": "CLARIFICATION",
+    "entity_id": "CLR-002",
+    "tender_id": "GEM-DEMO-2026-001",
+    "description": "Clarification CLR-002 — MSME preference query from BID-SUB-002 (Bharat Industrial Systems) responded by officer. MSME price preference of 15% confirmed; EMD exemption not applicable.",
+    "severity": "info",
+    "metadata": {
+      "clarification_id": "CLR-002",
+      "bidder_id": "BID-SUB-002",
+      "status": "RESPONDED"
+    }
+  },
+  {
+    "id": "AUD-2026-016",
     "timestamp": "2026-08-26T10:00:00",
-    "actor": "Officer",
-    "action": "Report Generated",
-    "detail": "Final compliance report generated for GEM-DEMO-2026-001",
+    "actor": "Bharat Industrial",
+    "actor_id": "bidder2@demo.com",
+    "actor_role": "BIDDER",
+    "action": "GRIEVANCE_FILED",
+    "entity_type": "GRIEVANCE",
+    "entity_id": "GRV-2026-001",
     "tender_id": "GEM-DEMO-2026-001",
-    "bidder_id": null,
-    "severity": "info"
+    "description": "Grievance GRV-2026-001 filed by BID-SUB-002 (Bharat Industrial Systems Pvt Ltd) regarding EMD shortfall of Rs 9,00,000. Requesting permission to submit supplementary EMD.",
+    "severity": "warning",
+    "metadata": {
+      "grievance_id": "GRV-2026-001",
+      "bidder_id": "BID-SUB-002",
+      "emd_submitted": 1500000,
+      "emd_required": 2400000,
+      "shortfall": 900000
+    }
   },
   {
-    "id": "AUD-0015",
-    "timestamp": "2026-08-28T22:38:17.051675",
-    "actor": "Rajesh Kumar",
-    "action": "Tender Created",
-    "detail": "New tender 'Test Tender from Veritas AI' created with ID TND-2026-109BB1.",
-    "tender_id": "TND-2026-109BB1",
-    "bidder_id": null,
-    "severity": "info"
-  },
-  {
-    "id": "AUD-0018",
-    "timestamp": "2026-08-29T12:29:09.501539",
+    "id": "AUD-2026-017",
+    "timestamp": "2026-09-01T09:00:00",
     "actor": "Veritas AI Engine",
-    "action": "Compliance Analysis Completed",
-    "detail": "Bidder Nova Engineering Solutions Pvt Ltd scored 84% with MEDIUM risk.",
+    "actor_id": "SYSTEM",
+    "actor_role": "SYSTEM",
+    "action": "BID_SUBMISSION_CONFIRMED",
+    "entity_type": "TENDER",
+    "entity_id": "GEM-DEMO-2026-001",
     "tender_id": "GEM-DEMO-2026-001",
-    "bidder_id": "BID-003",
-    "severity": "warning"
+    "description": "All 3 bids confirmed in COMPLIANCE_REVIEW status. Financial bids sealed. Tender GEM-DEMO-2026-001 proceeding to evaluation stage.",
+    "severity": "info",
+    "metadata": {
+      "total_bids": 3,
+      "bids": ["BID-SUB-001", "BID-SUB-002", "BID-SUB-003"],
+      "financial_bids_sealed": true
+    }
   },
   {
-    "id": "AUD-0019",
-    "timestamp": "2026-09-02T22:34:16.598886",
-    "actor": "Rajesh Kumar",
-    "action": "Milestone Updated",
-    "detail": "Milestone MLS-005 updated on contract CON-2026-001",
+    "id": "AUD-2026-018",
+    "timestamp": "2026-09-08T10:00:00",
+    "actor": "citizen@demo.com",
+    "actor_id": "USR-003",
+    "actor_role": "STAKEHOLDER",
+    "action": "PUBLIC_FEEDBACK",
+    "entity_type": "FEEDBACK",
+    "entity_id": "FB-2026-0001",
     "tender_id": "GEM-DEMO-2026-001",
-    "bidder_id": "BID-003",
-    "severity": "info"
-  },
-  {
-    "id": "AUD-0020",
-    "timestamp": "2026-09-04T23:31:49.233779",
-    "actor": "Veritas AI Engine",
-    "action": "Compliance Analysis Completed",
-    "detail": "Bidder ABC Technologies Pvt Ltd scored 76% with MEDIUM risk.",
-    "tender_id": "GEM-DEMO-2026-001",
-    "bidder_id": "BID-001",
-    "severity": "warning"
-  },
-  {
-    "id": "AUD-0021",
-    "timestamp": "2026-09-04T23:32:53.753983",
-    "actor": "Veritas AI Engine",
-    "action": "Compliance Analysis Completed",
-    "detail": "Bidder ABC Technologies Pvt Ltd scored 76% with MEDIUM risk.",
-    "tender_id": "GEM-DEMO-2026-001",
-    "bidder_id": "BID-001",
-    "severity": "warning"
-  },
-  {
-    "id": "AUD-0022",
-    "timestamp": "2026-09-04T23:33:10.194791",
-    "actor": "Veritas AI Engine",
-    "action": "Compliance Analysis Completed",
-    "detail": "Bidder ABC Technologies Pvt Ltd scored 76% with MEDIUM risk.",
-    "tender_id": "GEM-DEMO-2026-001",
-    "bidder_id": "BID-001",
-    "severity": "warning"
-  },
-  {
-    "id": "AUD-0023",
-    "timestamp": "2026-09-06T21:11:05.201741",
-    "actor": "Procurement Officer",
-    "action": "Financial Bids Opened",
-    "detail": "Officer opened financial bids for tender GEM-DEMO-2026-001. 3 bid(s) unsealed. Two-envelope opening ceremony completed.",
-    "tender_id": "GEM-DEMO-2026-001",
-    "bidder_id": null,
-    "severity": "info"
-  },
-  {
-    "id": "AUD-0029",
-    "timestamp": "2026-09-15T16:27:34.625761",
-    "actor": "Veritas AI Engine",
-    "action": "Compliance Analysis Completed",
-    "detail": "Bidder Test Bidder Pvt Ltd scored 3% with HIGH risk.",
-    "tender_id": "GEM-DEMO-2026-001",
-    "bidder_id": "BID-004",
-    "severity": "error"
-  },
-  {
-    "id": "AUD-0030",
-    "timestamp": "2026-09-16T22:22:43.481168",
-    "actor": "Veritas AI Engine",
-    "action": "Compliance Analysis Completed",
-    "detail": "Bidder Test Bidder Pvt Ltd scored 3% with HIGH risk.",
-    "tender_id": "GEM-DEMO-2026-001",
-    "bidder_id": "BID-004",
-    "severity": "error"
-  },
-  {
-    "id": "AUD-0024",
-    "timestamp": "2026-09-17T11:52:14.101271",
-    "actor": "Veritas AI Engine",
-    "action": "Compliance Analysis Completed",
-    "detail": "Bidder None scored 6% with HIGH risk.",
-    "tender_id": "GEM-DEMO-2026-001",
-    "bidder_id": "BID-004",
-    "severity": "error"
-  },
-  {
-    "id": "AUD-0025",
-    "timestamp": "2026-09-17T13:05:56.117307",
-    "actor": "Veritas AI Engine",
-    "action": "Compliance Analysis Completed",
-    "detail": "Bidder None scored 11% with HIGH risk.",
-    "tender_id": "GEM-DEMO-2026-001",
-    "bidder_id": "BID-004",
-    "severity": "error"
-  },
-  {
-    "id": "AUD-0026",
-    "timestamp": "2026-09-17T13:20:58.728807",
-    "actor": "Veritas AI Engine",
-    "action": "Compliance Analysis Completed",
-    "detail": "Bidder None scored 17% with HIGH risk.",
-    "tender_id": "GEM-DEMO-2026-001",
-    "bidder_id": "BID-004",
-    "severity": "error"
-  },
-  {
-    "id": "AUD-0027",
-    "timestamp": "2026-09-17T13:22:31.356321",
-    "actor": "Veritas AI Engine",
-    "action": "Compliance Analysis Completed",
-    "detail": "Bidder None scored 11% with HIGH risk.",
-    "tender_id": "GEM-DEMO-2026-001",
-    "bidder_id": "BID-004",
-    "severity": "error"
-  },
-  {
-    "id": "AUD-0028",
-    "timestamp": "2026-09-17T13:28:17.977609",
-    "actor": "Veritas AI Engine",
-    "action": "Compliance Analysis Completed",
-    "detail": "Bidder None scored 17% with HIGH risk.",
-    "tender_id": "GEM-DEMO-2026-001",
-    "bidder_id": "BID-004",
-    "severity": "error"
-  },
-  {
-    "id": "AUD-0031",
-    "timestamp": "2026-09-22T21:22:08.506944",
-    "actor": "Veritas AI Engine",
-    "action": "Compliance Analysis Completed",
-    "detail": "Bidder None scored 17% with HIGH risk.",
-    "tender_id": "GEM-DEMO-2026-001",
-    "bidder_id": "BID-004",
-    "severity": "error"
-  },
-  {
-    "id": "AUD-0032",
-    "timestamp": "2026-09-22T21:38:21.803371",
-    "actor": "Veritas AI Engine",
-    "action": "Compliance Analysis Completed",
-    "detail": "Bidder None scored 17% with HIGH risk.",
-    "tender_id": "GEM-DEMO-2026-001",
-    "bidder_id": "BID-004",
-    "severity": "error"
-  },
-  {
-    "id": "AUD-0033",
-    "timestamp": "2026-09-28T20:21:21.332002",
-    "actor": "Veritas AI Engine",
-    "action": "Compliance Analysis Completed",
-    "detail": "Bidder ABC Technologies Pvt Ltd scored 76% with MEDIUM risk.",
-    "tender_id": "GEM-DEMO-2026-001",
-    "bidder_id": "BID-001",
-    "severity": "warning"
-  },
-  {
-    "id": "AUD-0034",
-    "timestamp": "2026-10-02T23:15:36.275444",
-    "actor": "Veritas AI Engine",
-    "action": "Compliance Analysis Completed",
-    "detail": "Bidder None scored 11% with HIGH risk.",
-    "tender_id": "GEM-DEMO-2026-001",
-    "bidder_id": "BID-004",
-    "severity": "error"
+    "description": "Citizen Priya Sharma submitted public feedback FB-2026-0001 raising a process concern about evaluation timeline delay for tender GEM-DEMO-2026-001.",
+    "severity": "info",
+    "metadata": {
+      "feedback_id": "FB-2026-0001",
+      "submitter": "Priya Sharma",
+      "category": "Process Concern",
+      "priority": "MEDIUM"
+    }
   }
 ]
