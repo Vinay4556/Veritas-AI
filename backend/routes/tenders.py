@@ -16,6 +16,7 @@ from services.tender_service import (
 )
 from routes.auth import require_role, get_session
 import services.database as db
+from services.classification_service import classify_tender, CLASSIFICATION_LABELS, CLASSIFICATIONS
 
 tenders_bp = Blueprint('tenders', __name__)
 
@@ -56,6 +57,33 @@ def _audit(action, detail, tender_id=None, bidder_id=None, actor='Procurement Of
     save_json('audit.json', audit)
 
 
+def _format_estimated_value(value):
+    """Format estimated value, accepting int, float, or numeric string."""
+    if value is None:
+        return None
+    if isinstance(value, (int, float)):
+        return value
+    if isinstance(value, str):
+        try:
+            return float(value)
+        except ValueError:
+            return None
+    return None
+
+
+def _format_estimated_value_display(value):
+    """Format estimated value as ₹ string for display."""
+    if value is None:
+        return ''
+    try:
+        v = float(value)
+        if v < 0:
+            return ''
+        return f'₹{v:,.2f}'
+    except (ValueError, TypeError):
+        return ''
+
+
 # ── List / Get Tenders ────────────────────────────────────────
 @tenders_bp.route('/api/tenders', methods=['GET'])
 def list_tenders():
@@ -64,15 +92,35 @@ def list_tenders():
         if request.args.get('status'):
             filters['status'] = request.args.get('status')
         records = db.list_tenders_db(filters or None)
-        # Attach requirement_ids count for each tender
         result = []
         for t in records:
             t_dict = dict(t)
             result.append(t_dict)
         return jsonify(result)
     tenders = get_all_tenders()
+
+    # Optional query filters
+    filter_classification = request.args.get('classification', '').strip()
+    filter_procurement_type = request.args.get('procurement_type', '').strip()
+    filter_search = request.args.get('search', '').strip().lower()
+    filter_status = request.args.get('status', '').strip()
+
     summaries = []
     for t in tenders:
+        # Apply status filter
+        if filter_status and str(t.get('status', '')).lower() != filter_status.lower():
+            continue
+        # Apply classification filter
+        if filter_classification and t.get('classification') != filter_classification:
+            continue
+        # Apply procurement_type filter
+        if filter_procurement_type and str(t.get('procurement_type', '')).lower() != filter_procurement_type.lower():
+            continue
+        # Apply keyword search on title and department
+        if filter_search:
+            searchable = (str(t.get('title', '')) + ' ' + str(t.get('department', ''))).lower()
+            if filter_search not in searchable:
+                continue
         summary = get_tender_summary(t['id'])
         if summary:
             summaries.append(summary)
@@ -99,6 +147,52 @@ def get_requirements(tender_id):
         return jsonify(reqs or [])
     reqs = get_requirements_for_tender(tender_id)
     return jsonify(reqs or [])
+
+
+# ── Classification Lookup ─────────────────────────────────────
+@tenders_bp.route('/api/tenders/classifications', methods=['GET'])
+def get_classifications():
+    """Returns the classification labels and count per classification from JSON data."""
+    tenders = load_json('tenders.json')
+    counts = {label: 0 for label in CLASSIFICATION_LABELS.values()}
+    for t in tenders:
+        c = t.get('classification')
+        if c and c in CLASSIFICATION_LABELS:
+            label = CLASSIFICATION_LABELS[c]
+            counts[label] = counts.get(label, 0) + 1
+    return jsonify({'classifications': CLASSIFICATION_LABELS, 'counts': counts})
+
+
+@tenders_bp.route('/api/tenders/<tender_id>/classify', methods=['POST'])
+@require_role('OFFICER')
+def manual_classify(tender_id):
+    """Officer manually overrides the classification of a tender."""
+    data = request.get_json() or {}
+    classification = data.get('classification', '').strip()
+    if classification not in CLASSIFICATIONS:
+        return jsonify({'error': f'Invalid classification. Must be one of: {CLASSIFICATIONS}'}), 400
+    tenders = load_json('tenders.json')
+    tender = next((t for t in tenders if t['id'] == tender_id), None)
+    if not tender:
+        return jsonify({'error': 'Tender not found'}), 404
+    old_classification = tender.get('classification', 'NONE')
+    for t in tenders:
+        if t['id'] == tender_id:
+            t['classification'] = classification
+            t['secondary_classification'] = data.get('secondary_classification')
+            t['procurement_type'] = data.get('procurement_type', t.get('procurement_type'))
+            t['classification_confidence'] = 1.0
+            t['classification_reason'] = data.get('reason', 'Manual classification by officer')
+            t['classification_source'] = 'manual'
+            t['classification_review_required'] = False
+    save_json('tenders.json', tenders)
+    session = get_session(request)
+    actor = session.get('name', 'Officer') if session else 'Officer'
+    _audit('CLASSIFICATION_UPDATED',
+           f'Tender {tender_id} classification changed from {old_classification} to {classification}',
+           tender_id=tender_id, actor=actor, severity='info')
+    updated = next((t for t in tenders if t['id'] == tender_id), None)
+    return jsonify(updated)
 
 
 # ── Create Tender — with full configuration engine ────────────
@@ -138,8 +232,8 @@ def create_tender():
         'title': data['title'],
         'department': data['department'],
         'organisation': data.get('organisation', 'CPCL'),
-        'estimated_value': data['estimated_value'],
-        'estimated_value_display': data.get('estimated_value_display', f"₹{data['estimated_value']:,}"),
+        'estimated_value': _format_estimated_value(data.get('estimated_value')),
+        'estimated_value_display': data.get('estimated_value_display') or _format_estimated_value_display(data.get('estimated_value')),
         'submission_deadline': data['submission_deadline'],
         'original_submission_deadline': data['submission_deadline'],
         'deadline_extensions': [],
@@ -374,6 +468,13 @@ def re_tender(tender_id):
     """Create a new tender linked to a cancelled/failed parent."""
     data = request.get_json() or {}
 
+    if not isinstance(data, dict):
+        return jsonify({'error': 'Invalid request body'}), 400
+
+    submission_deadline = data.get('submission_deadline')
+    if not submission_deadline:
+        return jsonify({'error': 'submission_deadline is required'}), 400
+
     if USE_DATABASE:
         parent = db.get_tender_db(tender_id)
     else:
@@ -401,6 +502,12 @@ def re_tender(tender_id):
         'corrigenda': [],
         'prebid_questions': [],
         'requirement_ids': parent.get('requirement_ids') or [],
+        # Reset stale workflow fields from parent tender
+        'workflow_stage': 'TENDER_PUBLISHED',
+        'officer_decision': None,
+        'analyzed_at': None,
+        'ai_recommendation': None,
+        'scoring_summary': None,
     }
     if data.get('title'):
         new_tender['title'] = data['title']
